@@ -2,6 +2,8 @@ export default `#version 300 es
 precision highp float;
 
 uniform vec2 u_res;
+uniform sampler2D u_spheres;
+
 out vec4 o_fragColor;
 
 float iSphere(vec3 ro, vec3 rd, vec4 sph) {
@@ -18,16 +20,18 @@ vec3 nSphere(vec3 pos, vec4 sph) {
 	return (pos-sph.xyz) / sph.w;
 }
 
-vec4 sph1 = vec4(0,1,0,1);
-bool intersect(vec3 ro, vec3 rd, out float resT) {
+// vec4 sph1 = vec4(0,1,0,1);
+
+bool intersect(vec3 ro, vec3 rd, vec4 sph, out float resT) {
 	resT = 1000.0;
-	float tsph = iSphere(ro, rd, sph1);
+	float tsph = iSphere(ro, rd, sph);
 
 	resT = tsph;
 	return tsph > 0.0;
 }
 
 void main() {
+	vec4 sph1 = texelFetch(u_spheres, ivec2(0, 0), 0);
 	vec3 light = normalize(vec3(0.57703));
 	// uv are pixel coordinates, from 0 to 1
 	float aspect = u_res.y / u_res.x;
@@ -39,7 +43,7 @@ void main() {
 
 	// intersect ray with 3d scene
 	float t;
-	bool isect = intersect(ro, rd, t);
+	bool isect = intersect(ro, rd, sph1, t);
 
 	// draw black by default
 	vec3 col = vec3(0.0);
