@@ -2,6 +2,7 @@ export default `#version 300 es
 precision highp float;
 
 uniform vec2 u_res;
+uniform sampler2D u_csgtree;
 uniform sampler2D u_spheres;
 
 out vec4 o_fragColor;
@@ -11,7 +12,8 @@ vec3 nSphere(vec3 pos, vec4 sph) {
 }
 
 vec4 iSphere(vec3 ro, vec3 rd, int node) {
-	vec4 sph = texelFetch(u_spheres, ivec2(node, 0), 0);
+	// uvec2 csgnode = uvec2(texelFetch(u_csgtree, ivec2(1, 0), 0));
+	vec4 sph = texelFetch(u_spheres, ivec2(0, 0), 0);
 
 	vec3 oc = ro - sph.xyz;
 	float b = 2.0 * dot(oc, rd);

@@ -29,14 +29,21 @@ export function createBuffer(gl, data) {
 	return buffer;
 }
 
+let texUnit = 0;
 export function createTexture(gl, data) {
 	const texture = gl.createTexture();
 
+	gl.activeTexture(gl.TEXTURE0 + texUnit);
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.activeTexture(gl.TEXTURE0 + 0);
+	texUnit++;
 
 	gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array(data));
+	if (data instanceof Float32Array) {
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 2, 1, 0, gl.RGBA, gl.FLOAT, data);
+	}
+	else if (data instanceof Uint8Array) {
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8UI, 2, 1, 0, gl.RG_INTEGER, gl.UNSIGNED_BYTE, data);
+	}
 
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
