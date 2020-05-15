@@ -3,6 +3,8 @@ precision highp float;
 
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
+#define DEBUG 1
+
 // math
 #define MAXFLOAT 1e15f
 #define M_PI   3.141592653f
@@ -123,8 +125,8 @@ int right (int node) { return 2*node + 2;     }
 int parent(int node) { return (node - 1) / 2; }
 
 // node type helpers
-bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).y == uint(LF); }
-bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).y == uint(OP); }
+bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(LF); }
+bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(OP); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CSG ALGORITHM FUNCTIONS
@@ -392,6 +394,10 @@ void main() {
 	vec3 ro = vec3(0,1,3);
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
+#ifdef DEBUG
+	vec3 col = vec3(0, 0.5, 1);
+	if (primitive(3)) col = vec3(1,0,0);
+#else
 	// intersect ray with 3d scene
 	// vec4 isect = sceneNearestHit(ro, rd);
 	vec4 isect = iSphere(ro, rd, 1, 0.0);
@@ -406,6 +412,7 @@ void main() {
 		col = vec3(1,0,0)*dif*ao + vec3(1,0,0)*ao;
 	}
 	col = sqrt(col);
+#endif // DEBUG
 
 	o_fragColor = vec4(col,1);
 }

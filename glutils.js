@@ -42,7 +42,7 @@ export function createTexture(gl, data) {
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 2, 1, 0, gl.RGBA, gl.FLOAT, data);
 	}
 	else if (data instanceof Uint8Array) {
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8UI, 3, 1, 0, gl.RG_INTEGER, gl.UNSIGNED_BYTE, data);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8UI, 7, 1, 0, gl.RG_INTEGER, gl.UNSIGNED_BYTE, data);
 	}
 
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
