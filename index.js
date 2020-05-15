@@ -23,8 +23,8 @@ const uniforms = {
 	spheres: gl.getUniformLocation(program, 'u_spheres'),
 };
 
-// op[union], lf[sph0], lf[sph1]
-const csgtree = createTexture(gl, new Uint8Array([0,1, 1,0, 1,1]));
+// op[virtl], null, op[union], lf[sph0], lf[sph1]
+const csgtree = createTexture(gl, new Uint8Array([1,0, 0,0, 1,1, 2,0, 2,1]));
 // sph0, sph1
 const spheres = createTexture(gl, new Float32Array([0,1,0,1, 0,0,0,1]));
 
