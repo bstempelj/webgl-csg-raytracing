@@ -1,0 +1,35 @@
+=== DEBUGGING SNIPPETS ===
+return vec4(RED, 0);
+return vec4(BLUE, 0);
+return vec4(BLACK, 0);
+
+if (node == 0) return vec4(GREEN, 0);
+
+=== NOTES ===
+-- top
+node = 0 (VIRTL_ROOT)
+stateStack = [CLASSIFY]
+state = GOTOLFT
+
+-- goto
+node = 1 (ROOT)
+operation
+set isectL
+set isectR
+traverseL = false
+traverseR = false
+state = CLASSIFY
+
+-- classify
+hitL = ENTER
+hitR = ENTER
+tstart = isectL.t
+hitStack [isectR]
+stateStack = [CLASSIFY, LOADRGH]
+state = GOTOLFT
+
+-- goto
+node = 3 (LEFT_CHILD)
+set isectL
+state = CLASSIFY
+node = 1 (ROOT)

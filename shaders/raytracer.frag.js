@@ -6,11 +6,16 @@ precision highp float;
 #define DEBUG
 
 // colors
-#define BLACK vec3(0,0,0)
-#define WHITE vec3(1,1,1)
-#define RED   vec3(1,0,0)
-#define GREEN vec3(0,1,0)
-#define BLUE  vec3(0,0,1)
+#define BLACK  vec3(0,0,0)
+#define WHITE  vec3(1,1,1)
+#define RED    vec3(1,0,0)
+#define GREEN  vec3(0,1,0)
+#define BLUE   vec3(0,0,1)
+#define YELLOW vec3(1,1,0)
+
+// common indices
+#define VIRTL_ROOT 0
+#define ROOT 1
 
 // math
 #define MAXFLOAT 1e15f
@@ -271,6 +276,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 	vec4 isectL, isectR;
 	bool traverseL, traverseR;
 
+	int i = 0;
+
 	pushState(CLASSIFY); // do after GOTOLFT
 
 	for (bool toContinue = true; toContinue; ) {
@@ -300,7 +307,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					traverseR = false;
 				}
 
-				if (traverseL || traverseR) {					
+				if (traverseL || traverseR) {
 					if (!traverseL) {
 						pushHit(isectL);
 						pushState(LOADLFT);
@@ -321,19 +328,23 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 						state = GOTORGH;
 					}
 				}
-				else {					
+				else {
 					state = CLASSIFY;
 				}
 			}
 			else { // primitive(node)
+				// return vec4(YELLOW, 0);
 				if (state == GOTOLFT) {
+					// return vec4(RED, 0);
 					isectL = iSphere(ro, rd, node, tstart);
 				} else {
+					// return vec4(GREEN, 0);
 					isectR = iSphere(ro, rd, node, tstart);
 				}
 				state = CLASSIFY;
 				node = parent(node); // go to parent
-			}			
+				// if (node == 1) return vec4(YELLOW, 0);
+			}
 		}
 		if (state == LOADLFT || state == LOADRGH || state == CLASSIFY) {
 			if (state == LOADLFT || state == LOADRGH) {
@@ -342,29 +353,28 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				} else {
 					isectR = popHit();
 				}
-			}			
+			}
+
 			int hitL = classifyHit(rd, isectL);
 			int hitR = classifyHit(rd, isectR);
 			int op   = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
+			// if (hitL == EXIT && hitR == ENTER) return vec4(RED, 0);
+			// return vec4(BLUE, 0);
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
 			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {
-				return vec4(RED, 0);			
 				isectR = isectL;
 				state = popState();
-				node = parent(node);
-				return isectL;
+				node = parent(node);				
 
 				// toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, RETR)
-				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
+				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {				
 				isectL = isectR;
 				state = popState();
 				node = parent(node);
-				return isectR;
-
 				// toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, LOOPL)
@@ -385,7 +395,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				isectR.x = -1.0;
 				state = popState();
 			}
-			return vec4(BLACK, 0);
+
+			if (++i >= 2) return vec4(BLACK, 0);			
 		}
 	}
 	return result;
