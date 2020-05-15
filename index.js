@@ -26,7 +26,7 @@ const uniforms = {
 // op[virtl], null, op[union], lf[sph0], lf[sph1]
 const csgtree = createTexture(gl, new Uint8Array([1,0, 0,0, 1,1, 2,0, 2,1, 0,0, 0,0]));
 // sph0, sph1
-const spheres = createTexture(gl, new Float32Array([0,1,0,1, 0,0,0,1]));
+const spheres = createTexture(gl, new Float32Array([0,1,0,1, 0,2,0,1]));
 
 setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
 bindAttribute(gl, screenBuffer, screenAttr, 2);

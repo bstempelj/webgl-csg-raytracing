@@ -3,7 +3,7 @@ precision highp float;
 
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
-#define DEBUG 1
+#define DEBUG 0
 
 // math
 #define MAXFLOAT 1e15f
@@ -98,7 +98,7 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 	if (disc < 0.0) return vec4(-1.0);
 
 	float tenter = (-b - sqrt(disc)) / 2.0;
-	float texit  = (+b - sqrt(disc)) / 2.0;
+	float texit  = (-b + sqrt(disc)) / 2.0;
 
 	float t = (tenter > tstart) ? tenter : texit;
 	vec3 pos = ro + t*rd;
@@ -110,14 +110,14 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 ////////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 // stack push helpers
-void pushState(int state) { stateStack[++stateHead] = state;     }
+void pushState(int state) { stateStack[++stateHead] = state;   }
 void pushHit(vec4 isect)  { hitStack[++hitHead] = vec4(isect); }
 void pushTime(float t)    { hitStack[++hitHead] = vec4(t, -1.0, -1.0, -1.0); }
 
 // stack pop helpers
-int   popState()       { return stateStack[stateHead--]; }
-vec4  popHit() { return hitStack[hitHead--];     }
-float popTime()        { return hitStack[hitHead--].x;   }
+int   popState() { return stateStack[stateHead--]; }
+vec4  popHit()   { return hitStack[hitHead--];     }
+float popTime()  { return hitStack[hitHead--].x;   }
 
 // node access helpers
 int left  (int node) { return 2*node + 1;     }
@@ -132,9 +132,10 @@ bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == 
 // CSG ALGORITHM FUNCTIONS
 int classifyHit(vec3 rd, vec4 isect) {
 	if (isect.x < 0.0) return MISS;
-	float res = dot(normalize(rd), isect.yzw);
-	if (res > 0.0) return EXIT;
-	else return ENTER;
+	float res = dot(normalize(rd), normalize(isect.yzw));
+	if (res > 0.0) return EXIT; // same direction
+	else return ENTER;          // opposite direction
+	// what if == 0??
 }
 
 bool hasAction(ivec3 actions, int action) {
@@ -395,12 +396,42 @@ void main() {
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 #ifdef DEBUG
-	vec3 col = vec3(0, 0.5, 1);
-	if (primitive(3)) col = vec3(1,0,0);
+	int node = 2;
+	float tstart = 2.5;
+	vec4 isectL = iSphere(ro, rd, left(node), tstart);
+	vec4 isectR = iSphere(ro, rd, right(node), tstart);
+
+	vec3 col;
+
+	int hitL = classifyHit(rd, isectL);
+	int hitR = classifyHit(rd, isectR);
+	int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
+	ivec3 actions = stateTable(op, hitL, hitR);
+
+	// TEST ENTER, EXIT, MISS
+	// if (hitL == ENTER) col = vec3(1,0,0);
+	// if (hitL == EXIT)  col = vec3(0,1,0);
+	// if (hitL == MISS)  col = vec3(0,0,1);
+
+	// if (hitR == ENTER) col = vec3(1,0,0);
+	// if (hitR == EXIT)  col = vec3(0,1,0);
+	// if (hitR == MISS)  col = vec3(0,0,1);
+
+	// TEST GET OPERATION TYPE
+	// if (op == UNION) col = vec3(1,0,0);
+	// if (op == INTER) col = vec3(0,1,0);
+	// if (op == SUBST) col = vec3(0,0,1);
+
+	// TEST STATE_TABLE
+	// if (actions.x == RETLIFCLOSER) col = vec3(1,0,0);
+	// if (actions.x == RETRIFCLOSER) col = vec3(0,1,0);
+	// if (actions.x == RETL) col = vec3(1,1,0);
+	// if (actions.x == RETR) col = vec3(0,1,1);
 #else
 	// intersect ray with 3d scene
 	// vec4 isect = sceneNearestHit(ro, rd);
-	vec4 isect = iSphere(ro, rd, 1, 0.0);
+	// vec4 isect = iSphere(ro, rd, 1, 0.0);
+	vec4 isect = iSphere(ro, rd, left(left(0)), 0.0);
 
 	// draw black by default
 	vec3 col = vec3(0.0);
