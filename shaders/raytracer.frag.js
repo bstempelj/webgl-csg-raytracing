@@ -2,7 +2,7 @@ export default `#version 300 es
 precision highp float;
 
 uniform vec2 u_res;
-uniform sampler2D u_csgtree;
+uniform highp usampler2D u_csgtree;
 uniform sampler2D u_spheres;
 
 out vec4 o_fragColor;
@@ -12,8 +12,8 @@ vec3 nSphere(vec3 pos, vec4 sph) {
 }
 
 vec4 iSphere(vec3 ro, vec3 rd, int node) {
-	// uvec2 csgnode = uvec2(texelFetch(u_csgtree, ivec2(1, 0), 0));
-	vec4 sph = texelFetch(u_spheres, ivec2(0, 0), 0);
+	uvec4 lfNode = texelFetch(u_csgtree, ivec2(node, 0), 0);
+	vec4 sph = texelFetch(u_spheres, ivec2(lfNode.y, 0), 0);
 
 	vec3 oc = ro - sph.xyz;
 	float b = 2.0 * dot(oc, rd);
@@ -40,7 +40,7 @@ void main() {
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 	// intersect ray with 3d scene
-	vec4 isect = iSphere(ro, rd, 0);
+	vec4 isect = iSphere(ro, rd, 1);
 
 	// draw black by default
 	vec3 col = vec3(0.0);
