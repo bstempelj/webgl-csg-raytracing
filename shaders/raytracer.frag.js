@@ -4,14 +4,18 @@ precision highp float;
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
 #define DEBUG
+#define STACKOVERFLOW 10
 
 // colors
-#define BLACK  vec3(0,0,0)
-#define WHITE  vec3(1,1,1)
-#define RED    vec3(1,0,0)
-#define GREEN  vec3(0,1,0)
-#define BLUE   vec3(0,0,1)
-#define YELLOW vec3(1,1,0)
+#define BLACK  vec4(0,0,0,1)
+#define WHITE  vec4(1,1,1,1)
+#define RED    vec4(1,0,0,1)
+#define GREEN  vec4(0,1,0,1)
+#define BLUE   vec4(0,0,1,1)
+#define YELLOW vec4(1,1,0,1)
+#define TEAL   vec4(0,1,1,1)
+#define PURPLE vec4(1,0,1,1)
+#define ORANGE vec4(1,0.5,0,1)
 
 // common indices
 #define VIRTL_ROOT 0
@@ -137,8 +141,8 @@ int right (int node) { return 2*node + 2;     }
 int parent(int node) { return (node - 1) / 2; }
 
 // node type helpers
-bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(LF); }
 bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(OP); }
+bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(LF); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CSG ALGORITHM FUNCTIONS
@@ -268,7 +272,6 @@ ivec3 stateTable(int op, int hitL, int hitR) {
 }
 
 vec4 sceneNearestHit(vec3 ro, vec3 rd) {
-	vec4 result = vec4(-1);
 	float tstart = 0.0;
 	int node = 0;
 	int state = GOTOLFT;
@@ -276,11 +279,12 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 	vec4 isectL, isectR;
 	bool traverseL, traverseR;
 
-	int i = 0;
+	int i = 0; // for debugging
 
 	pushState(CLASSIFY); // do after GOTOLFT
 
-	for (bool toContinue = true; toContinue; ) {
+	// now i == 1, state == GOTOLFT
+	for (bool toContinue = true; toContinue; i++) {
 		if (state == SAVELFT) {
 			pushHit(isectL);
 			tstart = popTime();
@@ -288,13 +292,12 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 		}
 		if (state == GOTOLFT || state == GOTORGH) {
 			if (state == GOTOLFT) {
-				node = left(node);
+				node = left(node); // first time here, move to real root
 			} else {
 				node = right(node);
 			}
 
 			if (operation(node)) {
-				// AABB was hit (not implemented yet, just assume it was)
 				traverseL = true;
 				traverseR = true;
 
@@ -316,13 +319,16 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 						pushHit(isectR);
 						pushState(LOADRGH);
 					}
+					// still don't know for what this path is used
 					else {
+						// if (i == 0) return RED;
 						pushTime(tstart);
 						pushState(LOADLFT);
 						pushState(SAVELFT);
 					}
 
 					if (traverseL) {
+						// return BLUE;
 						state = GOTOLFT;
 					} else {
 						state = GOTORGH;
@@ -333,17 +339,13 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				}
 			}
 			else { // primitive(node)
-				// return vec4(YELLOW, 0);
 				if (state == GOTOLFT) {
-					// return vec4(RED, 0);
 					isectL = iSphere(ro, rd, node, tstart);
 				} else {
-					// return vec4(GREEN, 0);
 					isectR = iSphere(ro, rd, node, tstart);
 				}
 				state = CLASSIFY;
 				node = parent(node); // go to parent
-				// if (node == 1) return vec4(YELLOW, 0);
 			}
 		}
 		if (state == LOADLFT || state == LOADRGH || state == CLASSIFY) {
@@ -358,24 +360,45 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			int hitL = classifyHit(rd, isectL);
 			int hitR = classifyHit(rd, isectR);
 			int op   = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
-			// if (hitL == EXIT && hitR == ENTER) return vec4(RED, 0);
-			// return vec4(BLUE, 0);
+
+			// // both enter
+			// if (hitL == ENTER && hitR == ENTER) return RED;
+			// // both exit
+			// if (hitL == EXIT && hitR == EXIT) return BLUE;
+			// // enter, exit
+			// if (hitL == ENTER && hitR == EXIT) return YELLOW;
+			// // exit, enter
+			// if (hitL == EXIT && hitR == ENTER) return YELLOW;
+			// // enter, mis
+			// if (hitL == ENTER && hitR == MISS) return TEAL;
+			// // miss, enter
+			// if (hitL == MISS && hitR == ENTER) return PURPLE;
+			// exit, miss
+			// if (hitL == EXIT && hitR == MISS) return ORANGE;
+			// miss, exit
+			// if (hitL == MISS && hitR == EXIT) return WHITE;
+
+
+			// if (hitL == MISS) return RED;
+			// if (hitR == MISS) return RED;
+
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
-			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {
+			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {				
 				isectR = isectL;
 				state = popState();
-				node = parent(node);				
+				node = parent(node);
 
-				// toContinue = (stateHead >= 0);
+				toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, RETR)
-				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {				
+				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
 				isectL = isectR;
 				state = popState();
 				node = parent(node);
-				// toContinue = (stateHead >= 0);
+
+				toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, LOOPL)
 				 || (hasAction(actions, LOOPLIFCLOSER) && isectL.x <= isectR.x)) {
@@ -395,11 +418,12 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				isectR.x = -1.0;
 				state = popState();
 			}
-
-			if (++i >= 2) return vec4(BLACK, 0);			
 		}
+		if (i >= STACKOVERFLOW) return BLACK; // prevent crashing of gl
 	}
-	return result;
+
+	// return (isectL.x < isectR.x) ? isectL : isectR;
+	return BLACK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -415,20 +439,18 @@ void main() {
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 #ifdef DEBUG
-	int node = 2;
-	float tstart = 2.5;
-	vec4 isectL = iSphere(ro, rd, left(node), tstart);
-	vec4 isectR = iSphere(ro, rd, right(node), tstart);
+	// int node = 2;
+	// float tstart = 2.5;
+	// vec4 isectL = iSphere(ro, rd, left(node), tstart);
+	// vec4 isectR = iSphere(ro, rd, right(node), tstart);
 
-	vec3 col;
-
-	int hitL = classifyHit(rd, isectL);
-	int hitR = classifyHit(rd, isectR);
-	int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
-	ivec3 actions = stateTable(op, hitL, hitR);
+	// int hitL = classifyHit(rd, isectL);
+	// int hitR = classifyHit(rd, isectR);
+	// int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
+	// ivec3 actions = stateTable(op, hitL, hitR);
 
 	vec4 isect = sceneNearestHit(ro, rd);
-	col = isect.xyz;
+	vec3 col = isect.xyz;
 
 	// TEST ENTER, EXIT, MISS
 	// if (hitL == ENTER) col = vec3(1,0,0);
