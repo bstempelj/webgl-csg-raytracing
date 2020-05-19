@@ -363,18 +363,25 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 			// // both enter
 			// if (hitL == ENTER && hitR == ENTER) return RED;
+
 			// // both exit
 			// if (hitL == EXIT && hitR == EXIT) return BLUE;
+
 			// // enter, exit
 			// if (hitL == ENTER && hitR == EXIT) return YELLOW;
+
 			// // exit, enter
 			// if (hitL == EXIT && hitR == ENTER) return YELLOW;
+
 			// // enter, mis
-			// if (hitL == ENTER && hitR == MISS) return TEAL;
+			// if (hitL == ENTER && hitR == MISS) return TEAL; // PROBLEM HERE!!!!!
+
 			// // miss, enter
 			// if (hitL == MISS && hitR == ENTER) return PURPLE;
+
 			// exit, miss
 			// if (hitL == EXIT && hitR == MISS) return ORANGE;
+
 			// miss, exit
 			// if (hitL == MISS && hitR == EXIT) return WHITE;
 
@@ -385,7 +392,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
-			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {				
+			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {
 				isectR = isectL;
 				state = popState();
 				node = parent(node);
