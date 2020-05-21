@@ -436,12 +436,15 @@ void main() {
 	// generate a ray with origin ro and direction rd
 	vec3 ro = vec3(0,1,3);
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
+	vec3 col;
 
 #ifdef DEBUG
 	vec4 isect = sceneNearestHit(ro, rd);
-	vec3 col = isect.xyz;
-	if (isect != BLACK) {
+	if (isect.x > 0.0) {
 		col = 0.5*vec3(isect.y+1.0, isect.z+1.0, isect.w+1.0);
+	} else {
+	    float t = 0.5*(rd.y + 1.0);
+    	col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 	}
 #else
 	// intersect ray with 3d scene
