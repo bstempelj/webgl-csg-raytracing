@@ -26,13 +26,12 @@ precision highp float;
 #define M_PI   3.141592653f
 
 // states
-#define NONE     0
-#define GOTOLFT  1
-#define GOTORGH  2
-#define LOADLFT  3
-#define LOADRGH  4
-#define SAVELFT  5
-#define CLASSIFY 6
+#define GOTOLFT  0
+#define GOTORGH  1
+#define LOADLFT  2
+#define LOADRGH  3
+#define SAVELFT  4
+#define CLASSIFY 5
 
 // actions
 #define RETLIFCLOSER  0
@@ -81,8 +80,10 @@ out vec4 o_fragColor;
 // GLOBAL VARIABLES
 int  stateHead = -1;
 int  hitHead   = -1;
+int  timeHead  = -1;
 int  stateStack[STACK_SIZE];
 vec4 hitStack[STACK_SIZE];
+float timeStack[STACK_SIZE];
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRUCTS
@@ -128,12 +129,12 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 // stack push helpers
 void pushState(int state) { stateStack[++stateHead] = state;   }
 void pushHit(vec4 isect)  { hitStack[++hitHead] = vec4(isect); }
-void pushTime(float t)    { hitStack[++hitHead] = vec4(t, -1.0, -1.0, -1.0); }
+void pushTime(float t)    { timeStack[++timeHead] = t;         }
 
 // stack pop helpers
 int   popState() { return stateStack[stateHead--]; }
 vec4  popHit()   { return hitStack[hitHead--];     }
-float popTime()  { return hitStack[hitHead--].x;   }
+float popTime()  { return timeStack[timeHead--]; }
 
 // node access helpers
 int left  (int node) { return 2*node + 1;     }
@@ -151,7 +152,6 @@ int classifyHit(vec3 rd, vec4 isect) {
 	float res = dot(normalize(rd), normalize(isect.yzw));
 	if (res > 0.0) return EXIT; // same direction
 	else return ENTER;          // opposite direction
-	// what if == 0??
 }
 
 bool hasAction(ivec3 actions, int action) {
@@ -319,16 +319,13 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 						pushHit(isectR);
 						pushState(LOADRGH);
 					}
-					// still don't know for what this path is used
 					else {
-						// if (i == 0) return RED;
 						pushTime(tstart);
 						pushState(LOADLFT);
 						pushState(SAVELFT);
 					}
 
 					if (traverseL) {
-						// return BLUE;
 						state = GOTOLFT;
 					} else {
 						state = GOTORGH;
@@ -360,35 +357,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			int hitL = classifyHit(rd, isectL);
 			int hitR = classifyHit(rd, isectR);
 			int op   = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
-
-			// // both enter
-			// if (hitL == ENTER && hitR == ENTER) return RED;
-
-			// // both exit
-			// if (hitL == EXIT && hitR == EXIT) return BLUE;
-
-			// // enter, exit
-			// if (hitL == ENTER && hitR == EXIT) return YELLOW;
-
-			// // exit, enter
-			// if (hitL == EXIT && hitR == ENTER) return YELLOW;
-
-			// // enter, mis
-			// if (hitL == ENTER && hitR == MISS) return TEAL; // PROBLEM HERE!!!!!
-
-			// // miss, enter
-			// if (hitL == MISS && hitR == ENTER) return PURPLE;
-
-			// exit, miss
-			// if (hitL == EXIT && hitR == MISS) return ORANGE;
-
-			// miss, exit
-			// if (hitL == MISS && hitR == EXIT) return WHITE;
-
-
-			// if (hitL == MISS) return RED;
-			// if (hitR == MISS) return RED;
-
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
@@ -424,13 +392,16 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			else {
 				isectR.x = -1.0;
 				state = popState();
+				node = parent(node);
+
+				toContinue = (stateHead >= 0);
 			}
 		}
 		if (i >= STACKOVERFLOW) return BLACK; // prevent crashing of gl
 	}
 
-	// return (isectL.x < isectR.x) ? isectL : isectR;
-	return BLACK;
+	return (isectL.x <= isectR.x) ? isectL : isectR;
+	// return BLACK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -446,47 +417,8 @@ void main() {
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 #ifdef DEBUG
-	// int node = 2;
-	// float tstart = 2.5;
-	// vec4 isectL = iSphere(ro, rd, left(node), tstart);
-	// vec4 isectR = iSphere(ro, rd, right(node), tstart);
-
-	// int hitL = classifyHit(rd, isectL);
-	// int hitR = classifyHit(rd, isectR);
-	// int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
-	// ivec3 actions = stateTable(op, hitL, hitR);
-
 	vec4 isect = sceneNearestHit(ro, rd);
 	vec3 col = isect.xyz;
-
-	// TEST ENTER, EXIT, MISS
-	// if (hitL == ENTER) col = vec3(1,0,0);
-	// if (hitL == EXIT)  col = vec3(0,1,0);
-	// if (hitL == MISS)  col = vec3(0,0,1);
-
-	// if (hitR == ENTER) col = vec3(1,0,0);
-	// if (hitR == EXIT)  col = vec3(0,1,0);
-	// if (hitR == MISS)  col = vec3(0,0,1);
-
-	// TEST GET OPERATION TYPE
-	// if (op == UNION) col = vec3(1,0,0);
-	// if (op == INTER) col = vec3(0,1,0);
-	// if (op == SUBST) col = vec3(0,0,1);
-
-	// TEST STATE_TABLE
-	// if (actions.x == RETLIFCLOSER) col = vec3(1,0,0);
-	// if (actions.x == RETRIFCLOSER) col = vec3(0,1,0);
-	// if (actions.x == RETL) col = vec3(1,1,0);
-	// if (actions.x == RETR) col = vec3(0,1,1);
-
-	// TEST STATE STACK
-	// pushState(CLASSIFY);
-	// if (popState() == CLASSIFY) col = vec3(1,0,0);
-
-	// TEST HIT STACK
-	// pushHit(isectL);
-	// vec4 hit = popHit();
-	// if (hit.x >= 1.9) col = hit.yzw;
 #else
 	// intersect ray with 3d scene
 	vec4 isect = sceneNearestHit(ro, rd);

@@ -52,7 +52,7 @@ const csgtree = createTexture(gl, new Uint8Array([
 	LF,0, LF,1, LF,2, LF,3, NIL,NIL, NIL,NIL,  // primitives
 ]));
 // sph0, sph1, sph2, sph3
-const spheres = createTexture(gl, new Float32Array([-0.5,1,0,1, 0.5,1,0,1, 0,0.5,0,1, 0,-0.5,0,1]));
+const spheres = createTexture(gl, new Float32Array([-0.5,1,0,1, 0.5,1,0,1, 0,1.5,0,1, 0,0.5,0,1]));
 
 setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
 bindAttribute(gl, screenBuffer, screenAttr, 2);
