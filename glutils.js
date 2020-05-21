@@ -41,10 +41,10 @@ export function createTexture(gl, data) {
 
 	gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 	if (data instanceof Float32Array) {
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 4, 1, 0, gl.RGBA, gl.FLOAT, data);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, data.length/4, 1, 0, gl.RGBA, gl.FLOAT, data);
 	}
 	else if (data instanceof Uint8Array) {
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8UI, 13, 1, 0, gl.RG_INTEGER, gl.UNSIGNED_BYTE, data);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8UI, data.length/2, 1, 0, gl.RG_INTEGER, gl.UNSIGNED_BYTE, data);
 	}
 
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);

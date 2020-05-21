@@ -4,7 +4,7 @@ precision highp float;
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
 #define DEBUG
-#define STACKOVERFLOW 10
+#define STACKOVERFLOW 1000
 
 // colors
 #define BLACK  vec4(0,0,0,1)
@@ -99,14 +99,11 @@ float timeStack[STACK_SIZE];
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERSECTION FUNCTIONS
-vec3 nSphere(vec3 pos, vec4 sph) {
-	return (pos-sph.xyz) / sph.w;
-}
-
 vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 	uvec4 sphNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
 	vec4 sph = texelFetch(u_spheres, ivec2(sphNodeLoc.y, 0), 0);
-
+	
+	//ro = ro + tstart*rd;
 	vec3 oc = ro - sph.xyz;
 	float b = 2.0 * dot(oc, rd);
 	float c = dot(oc, oc) - sph.w*sph.w;
@@ -114,12 +111,18 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 
 	if (disc < 0.0) return vec4(-1.0);
 
-	float tenter = (-b - sqrt(disc)) / 2.0;
-	float texit  = (-b + sqrt(disc)) / 2.0;
+	float t0 = (-b - sqrt(disc)) / 2.0;
+	float t1 = (-b + sqrt(disc)) / 2.0;
+	float tenter = min(t0, t1);
+	float texit  = max(t0, t1);
 
-	float t = (tenter > tstart) ? tenter : texit;
+	float t;
+	if (texit < tstart) return vec4(-1.0);
+	if (tenter <= tstart) t = texit;
+	else t = tenter;
+
 	vec3 pos = ro + t*rd;
-	vec3 nor = nSphere(pos, sph);
+	vec3 nor = (pos-sph.xyz) / sph.w;
 
 	return vec4(t, nor);
 }
@@ -283,7 +286,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 	pushState(CLASSIFY); // do after GOTOLFT
 
-	// now i == 1, state == GOTOLFT
 	for (bool toContinue = true; toContinue; i++) {
 		if (state == SAVELFT) {
 			pushHit(isectL);
@@ -292,7 +294,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 		}
 		if (state == GOTOLFT || state == GOTORGH) {
 			if (state == GOTOLFT) {
-				node = left(node); // first time here, move to real root
+				node = left(node);
 			} else {
 				node = right(node);
 			}
@@ -356,7 +358,12 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 			int hitL = classifyHit(rd, isectL);
 			int hitR = classifyHit(rd, isectR);
-			int op   = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
+
+			// if (i == 1 && hitL == ENTER && hitR == ENTER) return GREEN;
+			//if (i == 1 && hitL == EXIT) return BLUE;
+			//if (i == 1 && hitR == ENTER) return RED;
+
+			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
@@ -364,11 +371,16 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				isectR = isectL;
 				state = popState();
 				node = parent(node);
-
+				
 				toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, RETR)
 				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
+				if (hasAction(actions, FLIPNORMR)) {
+					isectR.y *= -1.0;
+					isectR.z *= -1.0;
+					isectR.w *= -1.0;
+				}
 				isectL = isectR;
 				state = popState();
 				node = parent(node);
@@ -389,19 +401,28 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				pushState(LOADLFT);
 				state = GOTORGH;
 			}
-			else {
+			else if (hasAction(actions, MISS)) {
+				isectL.x = -1.0;
 				isectR.x = -1.0;
 				state = popState();
 				node = parent(node);
 
 				toContinue = (stateHead >= 0);
 			}
+			else { // virtual
+				state = popState();
+				toContinue = (stateHead >= 0);
+			}
 		}
-		if (i >= STACKOVERFLOW) return BLACK; // prevent crashing of gl
+		if (i >= STACKOVERFLOW) return PURPLE; // prevent crashing of gl
 	}
 
-	return (isectL.x <= isectR.x) ? isectL : isectR;
-	// return BLACK;
+	if (isectL.x < 0.0 && isectR.x < 0.0) return BLACK;
+	if (isectL.x < 0.0 && isectR.x > 0.0) return isectR;
+	if (isectR.x < 0.0 && isectL.x > 0.0) return isectL;
+	if (isectL.x <= isectR.x) return isectL;
+	if (isectR.x <= isectL.x) return isectR;
+	return BLACK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

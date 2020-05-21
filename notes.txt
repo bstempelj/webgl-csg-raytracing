@@ -3,3 +3,40 @@ if (node == 0) return WHITE; // return on condition
 return BLACK; // immediate return
 
 === NOTES ===
+//             virtl
+//            /     \
+//           /       \
+//          /         \
+//     inter           nil
+//    /     \
+//  sph0   sph1
+
+1st loop
+states: classify
+hits: 
+times:
+
+node   = inter
+state  = classify
+tstart = 0
+
+isectL = sph0.enter
+isectR = sph1.enter
+
+
+
+
+
+
+
+ 2nd loop
+ states: classify, LOADRGH
+ hits: sph1.enter
+ times:
+
+ node   = inter
+ state  = classify
+ tstart = sph0.enter
+
+ isectL = sph0.exit
+ isectR = sph1.enter
