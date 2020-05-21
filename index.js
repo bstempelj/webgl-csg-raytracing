@@ -54,6 +54,18 @@ const SUBST = 3;
 // // sph0, sph1, sph2, sph3
 // const spheres = createTexture(gl, new Float32Array([-0.5,1,0,1, 0.5,1,0,1, 0,1.5,0,1, 0,0.5,0,1]));
 
+
+//                     virtl
+//                    /     \
+//                   /       \
+//                  /         \
+//             inter           nil
+//            /     \
+//           /       \
+//          /         \
+//     union           union
+//    /     \         /     \
+//  sph0   sph1     sph2   sph3
 const csgtree = createTexture(gl, new Uint8Array([
 	OP,VIRTL,
 	OP,INTER, NIL,NIL,

@@ -154,7 +154,7 @@ int classifyHit(vec3 rd, vec4 isect) {
 	if (isect.x < 0.0) return MISS;
 	float res = dot(normalize(rd), normalize(isect.yzw));
 	if (res > 0.0) return EXIT; // same direction
-	else return ENTER;          // opposite direction
+	return ENTER;          // opposite direction
 }
 
 bool hasAction(ivec3 actions, int action) {
@@ -440,6 +440,9 @@ void main() {
 #ifdef DEBUG
 	vec4 isect = sceneNearestHit(ro, rd);
 	vec3 col = isect.xyz;
+	if (isect != BLACK) {
+		col = 0.5*vec3(isect.y+1.0, isect.z+1.0, isect.w+1.0);
+	}
 #else
 	// intersect ray with 3d scene
 	vec4 isect = sceneNearestHit(ro, rd);
@@ -456,7 +459,6 @@ void main() {
 	}
 	col = sqrt(col);
 #endif // DEBUG
-
 	o_fragColor = vec4(col,1);
 }
 `;
