@@ -117,12 +117,12 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 	float texit  = max(t0, t1);
 
 	float t;
-	if (texit < tstart) return vec4(-1.0);
+	if (texit <= tstart) return vec4(-1.0);
 	if (tenter <= tstart) t = texit;
 	else t = tenter;
 
 	vec3 pos = ro + t*rd;
-	vec3 nor = (pos-sph.xyz) / sph.w;
+	vec3 nor = normalize(pos-sph.xyz);// / sph.w;
 
 	return vec4(t, nor);
 }
@@ -402,8 +402,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				state = GOTORGH;
 			}
 			else if (hasAction(actions, MISS)) {
-				isectL.x = -1.0;
-				isectR.x = -1.0;
+				isectL = vec4(-1.0);
+				isectR = vec4(-1.0);
 				state = popState();
 				node = parent(node);
 
