@@ -4,6 +4,7 @@ precision highp float;
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
 #define DEBUG
+// #define NORMALS
 #define STACKOVERFLOW 1000
 
 // colors
@@ -328,6 +329,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					}
 
 					if (traverseL) {
+						// return BLUE;
 						state = GOTOLFT;
 					} else {
 						state = GOTORGH;
@@ -436,31 +438,35 @@ void main() {
 	// generate a ray with origin ro and direction rd
 	vec3 ro = vec3(0,1,3);
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
-	vec3 col;
 
 #ifdef DEBUG
+	vec3 col = vec3(0.0);
 	vec4 isect = sceneNearestHit(ro, rd);
 	if (isect.x > 0.0) {
 		col = 0.5*vec3(isect.y+1.0, isect.z+1.0, isect.w+1.0);
 	} else {
-	    float t = 0.5*(rd.y + 1.0);
-    	col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+		col = isect.xyz;
 	}
 #else
 	// intersect ray with 3d scene
 	vec4 isect = sceneNearestHit(ro, rd);
-	// vec4 isect = iSphere(ro, rd, 1, 0.0);
 
-	// draw black by default
 	vec3 col = vec3(0.0);
-	if (isect.x != -1.0) {
-		// if we hit the sphere
+	if (isect.x > 0.0) {
+#ifndef NORMALS
 		vec3 nor = isect.yzw;
 		float dif = clamp(dot(nor, light), 0.0, 1.0);
 		float ao = 0.5 + 0.5*nor.y;
 		col = vec3(1,0,0)*dif*ao + vec3(1,0,0)*ao;
+		col = sqrt(col);
+#else
+		col = 0.5*vec3(isect.y+1.0, isect.z+1.0, isect.w+1.0);
+#endif
+	} else {
+		// nice blue gradient for background
+	    float t = 0.5*(rd.y + 1.0);
+    	col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 	}
-	col = sqrt(col);
 #endif // DEBUG
 	o_fragColor = vec4(col,1);
 }

@@ -3,23 +3,27 @@ if (node == 0) return WHITE; // return on condition
 return BLACK; // immediate return
 
 === NOTES ===
-//             virtl
+//                     virtl
+//                    /     \
+//                   /       \
+//                  /         \
+//             inter           nil
 //            /     \
 //           /       \
 //          /         \
-//     inter           nil
-//    /     \
-//  sph0   sph1
+//     union           union
+//    /     \         /     \
+//  sph0   sph1     sph2   sph3
 
 1st loop
 -------------------
-states: classify
+states: classify, loadlft, savelft
 hits: 
-times:
+times: 0.0
 
 node   = inter
-state  = classify
+state  = gotolft
 tstart = 0.0
 
-isectL = sph0.enter
-isectR = sph1.enter
+isectL.t = 0.0
+isectR.t = 0.0
