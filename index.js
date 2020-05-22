@@ -9,6 +9,8 @@ import {
 import vShader from './shaders/raytracer.vert.js';
 import fShader from './shaders/raytracer.frag.js';
 
+import { unionScene, interScene } from './scenes.js';
+
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
 
@@ -23,59 +25,9 @@ const uniforms = {
 	spheres: gl.getUniformLocation(program, 'u_spheres'),
 };
 
-// node types
-const NIL = 0;
-const OP  = 1;
-const LF  = 2;
-
-// operations
-const VIRTL = 0;
-const UNION = 1;
-const INTER = 2;
-const SUBST = 3;
-
-//                     virtl
-//                    /     \
-//                   /       \
-//                  /         \
-//             union           nil
-//            /     \
-//           /       \
-//          /         \
-//     union           union
-//    /     \         /     \
-//  sph0   sph1     sph2   sph3
-// const csgtree = createTexture(gl, new Uint8Array([
-// 	OP,VIRTL,
-// 	OP,UNION, NIL,NIL,
-// 	OP,UNION, OP,UNION, NIL,NIL, NIL,NIL,
-// 	LF,0, LF,1, LF,2, LF,3, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL // primitives
-// ]));
-// // sph0, sph1, sph2, sph3
-// const spheres = createTexture(gl, new Float32Array([-0.5,1,0,1, 0.5,1,0,1, 0,1.5,0,1, 0,0.5,0,1]));
-
-
-//                     virtl
-//                    /     \
-//                   /       \
-//                  /         \
-//             inter           nil
-//            /     \
-//           /       \
-//          /         \
-//     union           union
-//    /     \         /     \
-//  sph0   sph1     sph2   sph3
-const csgtree = createTexture(gl, new Uint8Array([
-	OP,VIRTL,
-	OP,INTER, NIL,NIL,
-	OP,UNION, OP,UNION, NIL,NIL, NIL,NIL,
-	LF,0, LF,1, LF,2, LF,3, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL   // primitives
-	// LF,0, LF,1, NIL,NIL, NIL,NIL,  // primitives
-]));
-// sph0, sph1, sph2, sph3
-const spheres = createTexture(gl, new Float32Array([-0.5,1,0,1, 0.5,1,0,1, 0,1.5,0,1, 0,0.5,0,1]));
-// const spheres = createTexture(gl, new Float32Array([-0.5,1,0,1, 0.5,1,0,1]));
+const scene   = interScene;
+const csgtree = createTexture(gl, new Uint8Array(scene.tree));
+const spheres = createTexture(gl, new Float32Array(scene.spheres));
 
 setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
 bindAttribute(gl, screenBuffer, screenAttr, 2);

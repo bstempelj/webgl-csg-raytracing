@@ -12,13 +12,14 @@ return BLACK; // immediate return
 //  sph0   sph1
 
 1st loop
+-------------------
 states: classify
 hits: 
 times:
 
 node   = inter
 state  = classify
-tstart = 0
+tstart = 0.0
 
 isectL = sph0.enter
 isectR = sph1.enter

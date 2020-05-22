@@ -359,7 +359,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			int hitL = classifyHit(rd, isectL);
 			int hitR = classifyHit(rd, isectR);
 
-			// if (i == 1 && hitL == ENTER && hitR == ENTER) return GREEN;
+			// if (i == 0 && hitL == ENTER && hitR == ENTER) return GREEN;
 			//if (i == 1 && hitL == EXIT) return BLUE;
 			//if (i == 1 && hitR == ENTER) return RED;
 
