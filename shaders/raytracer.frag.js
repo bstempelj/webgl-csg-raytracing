@@ -146,8 +146,9 @@ bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == 
 int classifyHit(vec3 rd, vec4 isect) {
 	if (isect.x < 0.0) return MISS;
 	float res = dot(normalize(rd), normalize(isect.yzw));
-	if (res > 0.0) return EXIT; // same direction
-	return ENTER;          // opposite direction
+	if (res > 0.0) return EXIT;  // same direction
+	if (res < 0.0) return ENTER; // opposite direction
+	return MISS;
 }
 
 bool hasAction(ivec3 actions, int action) {
@@ -321,7 +322,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					}
 
 					if (traverseL) {
-						// return BLUE;
 						state = GOTOLFT;
 					} else {
 						state = GOTORGH;
@@ -338,7 +338,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					isectR = iSphere(ro, rd, node, tstart);
 				}
 				state = CLASSIFY;
-				node = parent(node); // go to parent
+				node = parent(node);
 			}
 		}
 		if (state == LOADLFT || state == LOADRGH || state == CLASSIFY) {
@@ -352,12 +352,9 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 			int hitL = classifyHit(rd, isectL);
 			int hitR = classifyHit(rd, isectR);
-
-			// if (i == 0 && hitL == ENTER && hitR == ENTER) return GREEN;
-			//if (i == 1 && hitL == EXIT) return BLUE;
-			//if (i == 1 && hitR == ENTER) return RED;
-
 			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
+
+			if (i == 4 && hitL == ENTER && hitR == EXIT) return GREEN;
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
