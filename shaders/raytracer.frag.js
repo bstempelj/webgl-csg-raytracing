@@ -96,7 +96,6 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 	uvec4 sphNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
 	vec4 sph = texelFetch(u_spheres, ivec2(sphNodeLoc.y, 0), 0);
 	
-	//ro = ro + tstart*rd;
 	vec3 oc = ro - sph.xyz;
 	float b = 2.0 * dot(oc, rd);
 	float c = dot(oc, oc) - sph.w*sph.w;
@@ -109,13 +108,11 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
 	float tenter = min(t0, t1);
 	float texit  = max(t0, t1);
 
-	float t;
 	if (texit <= tstart) return vec4(-1.0);
-	if (tenter <= tstart) t = texit;
-	else t = tenter;
 
+	float t = (tenter <= tstart) ? texit : tenter;
 	vec3 pos = ro + t*rd;
-	vec3 nor = normalize(pos-sph.xyz);// / sph.w;
+	vec3 nor = normalize(pos-sph.xyz);
 
 	return vec4(t, nor);
 }
