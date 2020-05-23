@@ -300,6 +300,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				}
 				if (traverseR && primitive(right(node))) {
 					isectR = iSphere(ro, rd, right(node), tstart);
+					// if (isectR.x == -1.0) return GREEN;
 					traverseR = false;
 				}
 
@@ -351,7 +352,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			int hitR = classifyHit(rd, isectR);
 			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
 
-			if (i == 4 && hitL == ENTER && hitR == EXIT) return GREEN;
+			// if (i == 4 && hitL == ENTER && hitR == EXIT) return GREEN;
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)

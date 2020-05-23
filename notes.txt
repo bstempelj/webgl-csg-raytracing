@@ -17,13 +17,14 @@ return BLACK; // immediate return
 
 1st loop
 -------------------
-states: classify, loadlft, savelft
-hits: 
-times: 0.0
+states: classify, loadrgh
+hits  : sph2.enter
+times : 
 
-node   = inter
-state  = gotolft
-tstart = 0.0
+i      = 4
+node   = union(left)
+state  = classify
+tstart = sph0.enter
 
-isectL.t = 0.0
-isectR.t = 0.0
+isectL.t = sph0.exit (sph0.enter)
+isectR.t = sph1.exit (sph1.exit)
