@@ -442,11 +442,7 @@ void main() {
 #ifdef DEBUG
 	vec3 col = vec3(0.0);
 	vec4 isect = sceneNearestHit(ro, rd);
-	if (isect.x > 0.0) {
-		col = 0.5*vec3(isect.y+1.0, isect.z+1.0, isect.w+1.0);
-	} else {
-		col = isect.xyz;
-	}
+	col = isect.xyz;
 #else
 	// intersect ray with 3d scene
 	vec4 isect = sceneNearestHit(ro, rd);
