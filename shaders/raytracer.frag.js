@@ -18,48 +18,40 @@ precision highp float;
 #define PURPLE vec4(1,0,1,1)
 #define ORANGE vec4(1,0.5,0,1)
 
-// common indices
-#define VIRTL_ROOT 0
-#define ROOT 1
-
-// math
-#define MAXFLOAT 1e15f
-#define M_PI   3.141592653f
-
 // states
-#define GOTOLFT  0
-#define GOTORGH  1
-#define LOADLFT  2
-#define LOADRGH  3
-#define SAVELFT  4
-#define CLASSIFY 5
+#define GOTOLFT       0x0001
+#define GOTORGH       0x0002
+#define LOADLFT       0x0003
+#define LOADRGH       0x0004
+#define SAVELFT       0x0005
+#define CLASSIFY      0x0006
 
 // actions
-#define RETLIFCLOSER  0
-#define RETRIFCLOSER  1
-#define RETL          3
-#define RETR          4
-#define LOOPL         5
-#define LOOPR         6
-#define LOOPLIFCLOSER 7
-#define LOOPRIFCLOSER 8
-#define FLIPNORMR     9
+#define RETLIFCLOSER  0x0007
+#define RETRIFCLOSER  0x0008
+#define RETL          0x0009
+#define RETR          0x0010
+#define LOOPL         0x0011
+#define LOOPR         0x0012
+#define LOOPLIFCLOSER 0x0013
+#define LOOPRIFCLOSER 0x0014
+#define FLIPNORMR     0x0015
 
 // hit types
-#define ENTER 0
-#define EXIT  1
-#define MISS  2
+#define ENTER 0x0016
+#define EXIT  0x0017
+#define MISS  0x0018
 
 // node types
-#define NIL 0
-#define OP  1
-#define LF  2
+#define NIL   0x0019
+#define OP    0x0020
+#define LF    0x0021
 
 // operations
-#define VIRTL 0
-#define UNION 1
-#define INTER 2
-#define SUBST 3
+#define VIRTL 0x0022
+#define UNION 0x0023
+#define INTER 0x0024
+#define SUBST 0x0045
 
 // primitives
 // #define SPHERE 0

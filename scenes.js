@@ -1,13 +1,14 @@
 // node types
-const NIL = 0;
-const OP  = 1;
-const LF  = 2;
+// node types
+const NIL = 0x0019;
+const OP  = 0x0020;
+const LF  = 0x0021;
 
 // operations
-const VIRTL = 0;
-const UNION = 1;
-const INTER = 2;
-const SUBST = 3;
+const VIRTL = 0x0022;
+const UNION = 0x0023;
+const INTER = 0x0024;
+const SUBST = 0x0045;
 
 //                     virtl
 //                    /     \
