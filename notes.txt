@@ -12,7 +12,6 @@ return BLACK; // immediate return
 //    /     \
 //  sph0   sph1
 
------ before branching -----
 states: classify, loadlft, loadrgh
 hits  : sph0.enter, sph1.exit
 times : 
@@ -24,23 +23,6 @@ tstart = sph0.enter
 
 isectL.t = sph0.exit
 isectR.t = sph1.exit
-
-
------ 1) retrifcloser -----
-states: classify, loadlft
-hits  : sph0.enter, 
-times : 
-
-i      = 3
-node   = virtl
-state  = loadrgh
-tstart = sph0.enter
-
-isectL.t = sph1.enter
-isectR.t = sph1.exit
-
-
------ 1) loopl -----
 
 
 

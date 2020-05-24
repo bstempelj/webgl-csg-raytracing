@@ -366,7 +366,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
 			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {
-				// if (i == 2) return RED;
+				// if (i == 0) return RED;
 				isectR = isectL;
 				state = popState();
 				node = parent(node);
@@ -389,7 +389,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPL)
 				 || (hasAction(actions, LOOPLIFCLOSER) && isectL.x <= isectR.x)) {
-				// if (i == 3) return RED;
+				// if (i == 2) return BLUE;
 				tstart = isectL.x;
 				pushHit(isectR);
 				pushState(LOADRGH);
@@ -397,7 +397,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPR)
 				 || (hasAction(actions, LOOPRIFCLOSER) && isectR.x < isectL.x)) {
-				// if (i == 3) return BLUE;
+				// if (i == 1) return BLUE;
 				tstart = isectR.x;
 				pushHit(isectL);
 				pushState(LOADLFT);
@@ -412,7 +412,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				toContinue = (stateHead >= 0);
 			}
 			else { // virtual
-				// if (i == 3) return BLUE;
 				state = popState();
 				toContinue = (stateHead >= 0);
 			}
@@ -432,7 +431,7 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / u_res.xy;
 
 	// generate a ray with origin ro and direction rd
-	vec3 ro = vec3(0,1,3);
+	vec3 ro = vec3(1,1,3);
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 #ifdef DEBUG
