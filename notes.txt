@@ -12,31 +12,48 @@ return BLACK; // immediate return
 //    /     \
 //  sph0   sph1
 
-
-// NEXT: RETRIFCLOSER, LOOPL
+----- before branching -----
 states: classify, loadlft, loadrgh
 hits  : sph0.enter, sph1.exit
 times : 
 
 i      = 2
-node   = sph0
-state  = gotolft
+node   = subtr
+state  = classify
 tstart = sph0.enter
 
 isectL.t = sph0.exit
 isectR.t = sph1.exit
 
---------------------------------------------
 
-// BRANCH: RETRIFCLOSE
+----- 1) retrifcloser -----
 states: classify, loadlft
-hits  : sph0.enter
+hits  : sph0.enter, 
 times : 
 
 i      = 3
-node   = subtr
+node   = virtl
 state  = loadrgh
 tstart = sph0.enter
 
-isectL.t = sph1.exit
+isectL.t = sph1.enter
 isectR.t = sph1.exit
+
+
+----- 1) loopl -----
+
+
+
+----- INIT STATE -----
+states: classify
+hits  : 
+times : 
+
+i      = 0
+node   = virtl
+state  = gotolft
+tstart = 0.0
+
+isectL.t = 
+isectR.t = 
+----- /INIT STATE -----
