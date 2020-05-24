@@ -269,7 +269,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 	int i = 0; // for debugging
 
-	pushState(CLASSIFY); // do after GOTOLFT
+	pushState(CLASSIFY);
 
 	for (bool toContinue = true; toContinue; i++) {
 		if (state == SAVELFT) {
@@ -278,7 +278,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			state = GOTORGH;
 		}
 		if (state == GOTOLFT || state == GOTORGH) {
-			// if (i == 2) return BLUE;
 			if (state == GOTOLFT) {
 				node = left(node);
 			} else {
@@ -292,12 +291,10 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				if (traverseL && primitive(left(node))) {
 					isectL = iSphere(ro, rd, left(node), tstart, TMAX);
 					traverseL = false;
-					// if (i == 0 && isEnter(rd, isectL.yzw)) return GREEN;
 				}
 				if (traverseR && primitive(right(node))) {
 					isectR = iSphere(ro, rd, right(node), tstart, TMAX);
 					traverseR = false;
-					// if (i == 0 && isEnter(rd, isectR.yzw)) return BLUE;
 				}
 
 				if (traverseL || traverseR) {
@@ -327,15 +324,9 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else { // primitive(node)
 				if (state == GOTOLFT) {
-					// if (i == 2) return GREEN;
 					isectL = iSphere(ro, rd, node, tstart, TMAX);
-					// if (i == 2 && isExit(rd, isectL.yzw)) return BLUE;
-					// if (i == 2 && isEnter(rd, isectL.yzw)) return GREEN;
 				} else {
-					// if (i == 1) return BLUE;
 					isectR = iSphere(ro, rd, node, tstart, TMAX);
-					// if (i == 1 && isExit(rd, isectR.yzw)) return BLUE;
-					// if (isEnter(rd, isectR.yzw)) return GREEN;
 				}
 				state = CLASSIFY;
 				node = parent(node);
@@ -354,19 +345,9 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			int hitR = classifyHit(rd, isectR);
 			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
 
-			// if (i == 3) {
-			// 	// if (isExit(rd, isectL.yzw)) return GREEN;
-			// 	// if (isExit(rd, isectR.yzw)) return GREEN;
-			// 	if (isExit(rd, isectL.yzw) && isExit(rd, isectR.yzw)) return GREEN;
-			// }
-
-			// if (i == 3 && isEnter(rd, isectL.yzw)) return GREEN;
-			// if (i == 3 && hitL == ENTER && hitR == EXIT) return GREEN;
-
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
 			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {
-				// if (i == 0) return RED;
 				isectR = isectL;
 				state = popState();
 				node = parent(node);
@@ -375,7 +356,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, RETR)
 				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
-				// if (i == 2) return RED;
 				if (hasAction(actions, FLIPNORMR)) {
 					isectR.y *= -1.0;
 					isectR.z *= -1.0;
@@ -389,7 +369,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPL)
 				 || (hasAction(actions, LOOPLIFCLOSER) && isectL.x <= isectR.x)) {
-				// if (i == 2) return BLUE;
 				tstart = isectL.x;
 				pushHit(isectR);
 				pushState(LOADRGH);
@@ -397,7 +376,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPR)
 				 || (hasAction(actions, LOOPRIFCLOSER) && isectR.x < isectL.x)) {
-				// if (i == 1) return BLUE;
 				tstart = isectR.x;
 				pushHit(isectL);
 				pushState(LOADLFT);
@@ -452,7 +430,7 @@ void main() {
 		col = sqrt(col);
 #else
 		col = 0.5*vec3(isect.y+1.0, isect.z+1.0, isect.w+1.0);
-#endif
+#endif // /NORMALS
 	} else {
 		// nice blue gradient for background
 	    float t = 0.5*(rd.y + 1.0);

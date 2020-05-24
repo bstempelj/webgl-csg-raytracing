@@ -29,8 +29,6 @@ export function createBuffer(gl, data) {
 	return buffer;
 }
 
-// obvezno dodaj računanje velikosti teksture
-// zdaj si se že 2x nategnil in debuggal za bv
 let texUnit = 0;
 export function createTexture(gl, data) {
 	const texture = gl.createTexture();
