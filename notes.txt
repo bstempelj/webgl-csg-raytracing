@@ -3,28 +3,40 @@ if (node == 0) return WHITE; // return on condition
 return BLACK; // immediate return
 
 === NOTES ===
-//                     virtl
-//                    /     \
-//                   /       \
-//                  /         \
-//             inter           nil
+
+//             virtl
 //            /     \
 //           /       \
 //          /         \
-//     union           union
-//    /     \         /     \
-//  sph0   sph1     sph2   sph3
+//     subtr           nil
+//    /     \
+//  sph0   sph1
 
-1st loop
--------------------
-states: classify, loadrgh
-hits  : sph2.enter
+
+// NEXT: RETRIFCLOSER, LOOPL
+states: classify, loadlft, loadrgh
+hits  : sph0.enter, sph1.exit
 times : 
 
-i      = 4
-node   = union(left)
-state  = classify
+i      = 2
+node   = sph0
+state  = gotolft
 tstart = sph0.enter
 
-isectL.t = sph0.exit (sph0.enter)
-isectR.t = sph1.exit (sph1.exit)
+isectL.t = sph0.exit
+isectR.t = sph1.exit
+
+--------------------------------------------
+
+// BRANCH: RETRIFCLOSE
+states: classify, loadlft
+hits  : sph0.enter
+times : 
+
+i      = 3
+node   = subtr
+state  = loadrgh
+tstart = sph0.enter
+
+isectL.t = sph1.exit
+isectR.t = sph1.exit

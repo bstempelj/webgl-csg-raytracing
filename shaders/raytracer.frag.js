@@ -6,6 +6,8 @@ precision highp float;
 #define DEBUG
 // #define NORMALS
 #define STACKOVERFLOW 1000
+#define TMAX 100.0
+#define STACK_SIZE 10
 
 // colors
 #define BLACK  vec4(0,0,0,1)
@@ -57,9 +59,6 @@ precision highp float;
 // #define SPHERE 0
 // #define CUBE 1
 // #define CYLINDER 2
-
-// stack
-#define STACK_SIZE 10
 
 ////////////////////////////////////////////////////////////////////////////////
 // SHADER VARIABLES
@@ -161,13 +160,22 @@ int parent(int node) { return (node - 1) / 2; }
 bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(OP); }
 bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(LF); }
 
+// debug helpers
+bool sameDir(vec3 rd, vec3 nor) { return dot(normalize(rd), normalize(nor)) > 0.0; }
+bool opstDir(vec3 rd, vec3 nor) { return dot(normalize(rd), normalize(nor)) < 0.0; }
+bool isExit(vec3 rd, vec3 nor)  { return sameDir(rd, nor); }
+bool isEnter(vec3 rd, vec3 nor) { return opstDir(rd, nor); }
+
 ////////////////////////////////////////////////////////////////////////////////
 // CSG ALGORITHM FUNCTIONS
 int classifyHit(vec3 rd, vec4 isect) {
 	if (isect.x < 0.0) return MISS;
-	float res = dot(normalize(rd), normalize(isect.yzw));
-	if (res > 0.0) return EXIT;  // same direction
-	return ENTER; // opposite direction
+	if (isEnter(rd, isect.yzw)) return ENTER;
+	if (isExit(rd, isect.yzw)) return EXIT;
+	return MISS;
+	// float res = dot(normalize(rd), normalize(isect.yzw));
+	// if (res > 0.0) return EXIT;  // same direction
+	// return ENTER; // opposite direction
 }
 
 bool hasAction(ivec3 actions, int action) {
@@ -306,6 +314,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			state = GOTORGH;
 		}
 		if (state == GOTOLFT || state == GOTORGH) {
+			// if (i == 2) return BLUE;
 			if (state == GOTOLFT) {
 				node = left(node);
 			} else {
@@ -317,15 +326,11 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				traverseR = true;
 
 				if (traverseL && primitive(left(node))) {
-					isectL = iSphere(ro, rd, left(node), tstart, 100.0);
-					// if (i == 4 && isectL.x > tstart) return GREEN;
-					// if (i == 4 && isectL.x == -1.0) return GREEN;
+					isectL = iSphere(ro, rd, left(node), tstart, TMAX);
 					traverseL = false;
 				}
 				if (traverseR && primitive(right(node))) {
-					isectR = iSphere(ro, rd, right(node), tstart, 100.0);
-					// if (i == 4 && isectR.x > tstart) return GREEN;
-					// if (i == 4 && isectR.x == -1.0) return GREEN;
+					isectR = iSphere(ro, rd, right(node), tstart, TMAX);
 					traverseR = false;
 				}
 
@@ -356,9 +361,15 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else { // primitive(node)
 				if (state == GOTOLFT) {
-					isectL = iSphere(ro, rd, node, tstart, 100.0);
+					// if (i == 2) return GREEN;
+					isectL = iSphere(ro, rd, node, tstart, TMAX);
+					// if (isExit(rd, isectL.yzw)) return BLUE;
+					// if (isEnter(rd, isectL.yzw)) return GREEN;
 				} else {
-					isectR = iSphere(ro, rd, node, tstart, 100.0);
+					// if (i == 1) return BLUE;
+					isectR = iSphere(ro, rd, node, tstart, TMAX);
+					// if (isExit(rd, isectR.yzw)) return BLUE;
+					// if (isEnter(rd, isectR.yzw)) return GREEN;
 				}
 				state = CLASSIFY;
 				node = parent(node);
@@ -374,20 +385,21 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 
 			int hitL = classifyHit(rd, isectL);
-			// float res = dot(normalize(rd), normalize(isectL.yzw));
-			// if (i == 4 && res > 0.0) return GREEN;
-
 			int hitR = classifyHit(rd, isectR);
-			// float res = dot(normalize(rd), normalize(isectR.yzw));
-			// if (i == 4 && res > 0.0) return GREEN;
-
 			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
 
-			// if (i == 4 && hitL == ENTER && hitR == EXIT) return GREEN;
+			// if (i == 3) {
+			// 	// if (isExit(rd, isectL.yzw)) return GREEN;
+			// 	// if (isExit(rd, isectR.yzw)) return GREEN;
+			// 	if (isExit(rd, isectL.yzw) && isExit(rd, isectR.yzw)) return GREEN;
+			// }
+
+			if (i == 3 && hitL == EXIT && hitR == EXIT) return GREEN;
 
 			ivec3 actions = stateTable(op, hitL, hitR);
 			if (hasAction(actions, RETL)
 			|| (hasAction(actions, RETLIFCLOSER) && isectL.x <= isectR.x)) {
+				// if (i == 2) return RED;
 				isectR = isectL;
 				state = popState();
 				node = parent(node);
@@ -396,6 +408,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, RETR)
 				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
+				// if (i == 2) return GREEN;
 				if (hasAction(actions, FLIPNORMR)) {
 					isectR.y *= -1.0;
 					isectR.z *= -1.0;
@@ -409,6 +422,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPL)
 				 || (hasAction(actions, LOOPLIFCLOSER) && isectL.x <= isectR.x)) {
+				// if (i == 2) return BLUE;
 				tstart = isectL.x;
 				pushHit(isectR);
 				pushState(LOADRGH);
@@ -416,6 +430,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPR)
 				 || (hasAction(actions, LOOPRIFCLOSER) && isectR.x < isectL.x)) {
+				// if (i == 1) return BLUE;
 				tstart = isectR.x;
 				pushHit(isectL);
 				pushState(LOADLFT);
@@ -454,7 +469,7 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / u_res.xy;
 
 	// generate a ray with origin ro and direction rd
-	vec3 ro = vec3(0,1,3);
+	vec3 ro = vec3(1,1,3);
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 #ifdef DEBUG
