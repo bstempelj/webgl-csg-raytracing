@@ -51,7 +51,7 @@ precision highp float;
 #define VIRTL 0x0022
 #define UNION 0x0023
 #define INTER 0x0024
-#define SUBST 0x0045
+#define SUBTR 0x0025
 
 // primitives
 // #define SPHERE 0
@@ -79,43 +79,66 @@ vec4 hitStack[STACK_SIZE];
 float timeStack[STACK_SIZE];
 
 ////////////////////////////////////////////////////////////////////////////////
-// STRUCTS
-// struct ray {
-// 	vec3 origin;
-// 	vec3 direct;
-// };
-
-// struct hitpoint {
-// 	float t;
-// 	vec3 normal;
-// };
-
-////////////////////////////////////////////////////////////////////////////////
 // INTERSECTION FUNCTIONS
-vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
+vec4 iSphere(vec3 ro, vec3 rd, int node, float tmin, float tmax) {
 	uvec4 sphNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
 	vec4 sph = texelFetch(u_spheres, ivec2(sphNodeLoc.y, 0), 0);
-	
+
 	vec3 oc = ro - sph.xyz;
+	float a = dot(rd, rd);
 	float b = 2.0 * dot(oc, rd);
 	float c = dot(oc, oc) - sph.w*sph.w;
 	float disc = b*b - 4.0*c;
-
-	if (disc < 0.0) return vec4(-1.0);
-
-	float t0 = (-b - sqrt(disc)) / 2.0;
-	float t1 = (-b + sqrt(disc)) / 2.0;
-	float tenter = min(t0, t1);
-	float texit  = max(t0, t1);
-
-	if (texit <= tstart) return vec4(-1.0);
-
-	float t = (tenter <= tstart) ? texit : tenter;
-	vec3 pos = ro + t*rd;
-	vec3 nor = normalize(pos-sph.xyz);
-
-	return vec4(t, nor);
+	if (disc > 0.0) {
+		float t = (-b - sqrt(disc)) / (2.0*a);
+		if (t > tmin && t < tmax) {
+			vec3 pos = ro + t*rd;
+			vec3 nor = normalize(pos-sph.xyz);
+			return vec4(t, nor);
+		}
+		t = (-b + sqrt(disc)) / (2.0*a);
+		if (t > tmin && t < tmax) {
+			vec3 pos = ro + t*rd;
+			vec3 nor = normalize(pos-sph.xyz);
+			return vec4(t, nor);
+		}
+	}
+	return vec4(-1);
 }
+
+// vec4 iSphere(vec3 ro, vec3 rd, int node, float tstart) {
+// 	uvec4 sphNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
+// 	vec4 sph = texelFetch(u_spheres, ivec2(sphNodeLoc.y, 0), 0);
+	
+// 	// ro = ro + tstart*rd;
+// 	vec3 oc = ro - sph.xyz;
+// 	float b = 2.0 * dot(oc, rd);
+// 	float c = dot(oc, oc) - sph.w*sph.w;
+// 	float disc = b*b - 4.0*c;
+
+// 	if (disc < 0.0) return vec4(-1.0);
+
+// 	float t0 = (-b - sqrt(disc)) / 2.0;
+// 	float t1 = (-b + sqrt(disc)) / 2.0;
+
+// 	float t = tstart;
+// 	float tenter = min(t0, t1);
+// 	float texit  = max(t0, t1);
+
+// 	if (tstart > texit) return vec4(-1);
+// 	if (tstart == tenter) return vec4(-1);
+// 	if (tstart == texit) return vec4(-1);
+// 	if (tstart < tenter) t = tenter;
+// 	else if (tstart < texit) t = texit;
+
+// 	// if (texit <= tstart) return vec4(-1.0);
+
+// 	// float t = (tenter <= tstart) ? texit : tenter;
+// 	vec3 pos = ro + t*rd;
+// 	vec3 nor = normalize(pos-sph.xyz);
+
+// 	return vec4(t, nor);
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
@@ -144,8 +167,7 @@ int classifyHit(vec3 rd, vec4 isect) {
 	if (isect.x < 0.0) return MISS;
 	float res = dot(normalize(rd), normalize(isect.yzw));
 	if (res > 0.0) return EXIT;  // same direction
-	if (res < 0.0) return ENTER; // opposite direction
-	return MISS;
+	return ENTER; // opposite direction
 }
 
 bool hasAction(ivec3 actions, int action) {
@@ -226,8 +248,8 @@ ivec3 stateTable(int op, int hitL, int hitR) {
 			actions.x = MISS;
 		}
 	}
-	// SUBSTRACTION
-	else if (op == SUBST) {
+	// SUBTRRACTION
+	else if (op == SUBTR) {
 		// left ENTER
 		if (hitL == ENTER && hitR == ENTER) {
 			actions.x = RETLIFCLOSER;
@@ -295,12 +317,15 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				traverseR = true;
 
 				if (traverseL && primitive(left(node))) {
-					isectL = iSphere(ro, rd, left(node), tstart);
+					isectL = iSphere(ro, rd, left(node), tstart, 100.0);
+					// if (i == 4 && isectL.x > tstart) return GREEN;
+					// if (i == 4 && isectL.x == -1.0) return GREEN;
 					traverseL = false;
 				}
 				if (traverseR && primitive(right(node))) {
-					isectR = iSphere(ro, rd, right(node), tstart);
-					// if (isectR.x == -1.0) return GREEN;
+					isectR = iSphere(ro, rd, right(node), tstart, 100.0);
+					// if (i == 4 && isectR.x > tstart) return GREEN;
+					// if (i == 4 && isectR.x == -1.0) return GREEN;
 					traverseR = false;
 				}
 
@@ -331,9 +356,9 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else { // primitive(node)
 				if (state == GOTOLFT) {
-					isectL = iSphere(ro, rd, node, tstart);
+					isectL = iSphere(ro, rd, node, tstart, 100.0);
 				} else {
-					isectR = iSphere(ro, rd, node, tstart);
+					isectR = iSphere(ro, rd, node, tstart, 100.0);
 				}
 				state = CLASSIFY;
 				node = parent(node);
@@ -349,7 +374,13 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 
 			int hitL = classifyHit(rd, isectL);
+			// float res = dot(normalize(rd), normalize(isectL.yzw));
+			// if (i == 4 && res > 0.0) return GREEN;
+
 			int hitR = classifyHit(rd, isectR);
+			// float res = dot(normalize(rd), normalize(isectR.yzw));
+			// if (i == 4 && res > 0.0) return GREEN;
+
 			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
 
 			// if (i == 4 && hitL == ENTER && hitR == EXIT) return GREEN;

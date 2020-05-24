@@ -9,7 +9,13 @@ import {
 import vShader from './shaders/raytracer.vert.js';
 import fShader from './shaders/raytracer.frag.js';
 
-import { unionScene, interScene } from './scenes.js';
+import {
+	unionScene,
+	interScene,
+	subtrScene,
+	union3Scene,
+	interUnion2Scene,
+} from './scenes.js';
 
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
@@ -25,7 +31,7 @@ const uniforms = {
 	spheres: gl.getUniformLocation(program, 'u_spheres'),
 };
 
-const scene   = interScene;
+const scene   = subtrScene;
 const csgtree = createTexture(gl, new Uint8Array(scene.tree));
 const spheres = createTexture(gl, new Float32Array(scene.spheres));
 
