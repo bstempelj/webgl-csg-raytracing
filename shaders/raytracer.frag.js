@@ -3,8 +3,8 @@ precision highp float;
 
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
-#define DEBUG
-// #define NORMALS
+// #define DEBUG
+#define NORMALS
 #define STACKOVERFLOW 1000
 #define TMAX 100.0
 #define STACK_SIZE 10
@@ -431,7 +431,7 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / u_res.xy;
 
 	// generate a ray with origin ro and direction rd
-	vec3 ro = vec3(1,1,3);
+	vec3 ro = vec3(0,1,3);
 	vec3 rd = normalize(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1));
 
 #ifdef DEBUG

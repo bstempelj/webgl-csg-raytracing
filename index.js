@@ -31,7 +31,7 @@ const uniforms = {
 	spheres: gl.getUniformLocation(program, 'u_spheres'),
 };
 
-const scene   = subtrScene;
+const scene   = union3Scene;
 const csgtree = createTexture(gl, new Uint8Array(scene.tree));
 const spheres = createTexture(gl, new Float32Array(scene.spheres));
 
