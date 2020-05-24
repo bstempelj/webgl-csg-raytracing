@@ -1,6 +1,6 @@
 # WebGL SHCRT (Single Hit CSG Raytracing)
 
-This is a WebGL2 implementation of the iterative algoritm presented in the article Spatially Efficient Tree Layout for GPU Ray-tracing of Constructive Solid Geometry Scenes by Denis Bogolepov, Danila Ulyanov, and Vadim Turlapov.
+This is a WebGL2 implementation of the iterative algoritm presented in the article **Spatially Efficient Tree Layout for GPU Ray-tracing of Constructive Solid Geometry Scenes** by Denis Bogolepov, Danila Ulyanov, and Vadim Turlapov.
 
 ## How to run it?
 The easiest way if you have **Python 3.x** installed is to use its built in web server.
