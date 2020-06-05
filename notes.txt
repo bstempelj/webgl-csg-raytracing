@@ -4,31 +4,32 @@ return BLACK; // immediate return
 
 === NOTES ===
 
-//             virtl
+//                     virtl
+//                    /     \
+//                   /       \
+//                  /         \
+//             inter           nil
 //            /     \
 //           /       \
 //          /         \
-//     subtr           nil
-//    /     \
-//  sph0   sph1
+//     union           union
+//    /     \         /     \
+//  sph0   sph1     sph2   sph3
 
 states: classify
 hits  : 
 times : 
-actions: miss
 
-i      = 6
-node   = virtl
-state  = loadlft 
-tstart = sph0.exit
+i      = 0
+node   = inter
+state  = gotolft
+tstart = 0.0
 
 traverseL = false
-traverseR = true
+traverseR = false
 
-isectL.t = sph0.enter
-isectR.t = invalid
-
-
+isectL.t = 
+isectR.t = 
 
 ----- INIT STATE -----
 states: classify

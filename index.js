@@ -18,8 +18,8 @@ function rad(deg) { return deg * Math.PI / 180; }
 
 function initRotationSliders(ui) {
 	for (let slider in ui) {
-		ui[slider].min = 0.0;
-		ui[slider].max = 360.0;
+		ui[slider].min = -180.0;
+		ui[slider].max = 180.0;
 		ui[slider].step = 1.0;
 		ui[slider].value = 0.0;
 	}
@@ -32,7 +32,7 @@ function initSceneSwitcher(ui) {
 		opt.innerHTML = scene;
 		ui.sceneSwitcher.appendChild(opt);		
 	}
-	ui.sceneSwitcher.selectedIndex = 0;
+	ui.sceneSwitcher.selectedIndex = 1;
 }
 
 function getSelectedScene(ui) {

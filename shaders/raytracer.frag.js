@@ -3,8 +3,8 @@ precision highp float;
 
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
-// #define DEBUG
-// #define NORMALS
+#define DEBUG
+#define NORMALS
 #define STACKOVERFLOW 1000
 #define TMAX 100.0
 #define STACK_SIZE 10
@@ -106,52 +106,6 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tmin, float tmax) {
 		}
 	}
 	return INVALID_HIT;
-}
-
-// axis aligned box centered at the origin, with size boxSize
-vec2 iBox(vec3 ro, vec3 rd, vec3 boxSize, out vec3 outNormal) {
-    vec3 m = 1.0/rd; // can precompute if traversing a set of aligned boxes
-    vec3 n = m*ro;   // can precompute if traversing a set of aligned boxes
-    vec3 k = abs(m)*boxSize;
-    vec3 t1 = -n - k;
-    vec3 t2 = -n + k;
-    float tN = max( max( t1.x, t1.y ), t1.z );
-    float tF = min( min( t2.x, t2.y ), t2.z );
-    if(tN > tF || tF < 0.0) return INVALID_HIT;
-    outNormal = -sign(rdd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
-    return vec2(tN, tF);
-}
-
-// extreme a, extreme b, radius
-vec4 iCylinder(vec3 ro, vec3 rd, vec3 pa, vec3 pb, float ra) {
-    vec3 ba = pb-pa;
-    vec3  oc = ro - pa;
-
-    float baba = dot(ba,ba);
-    float bard = dot(ba,rd);
-    float baoc = dot(ba,oc);
-    
-    float k2 = baba            - bard*bard;
-    float k1 = baba*dot(oc,rd) - baoc*bard;
-    float k0 = baba*dot(oc,oc) - baoc*baoc - ra*ra*baba;
-    
-    float h = k1*k1 - k2*k0;
-    if( h<0.0 ) return vec4(-1.0);
-    h = sqrt(h);
-    float t = (-k1-h)/k2;
-
-    // body
-    float y = baoc + t*bard;
-    if( y>0.0 && y<baba ) return vec4( t, (oc+t*rd - ba*y/baba)/ra );
-    
-    // caps
-    t = ( ((y<0.0) ? 0.0 : baba) - baoc)/bard;
-    if( abs(k1+k2*t)<h )
-    {
-        return vec4( t, ba*sign(y)/baba );
-    }
-
-    return INVALID_HIT;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -344,16 +298,20 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					traverseR = false;
 				}
 
-				if (traverseL || traverseR) {					
+				if (traverseL || traverseR) {
 					if (!traverseL) {
+						// if the right child was a primitive
 						pushHit(isectL);
 						pushState(LOADLFT);
 					}
 					else if (!traverseR) {
+						// if the left child was a primitive
 						pushHit(isectR);
 						pushState(LOADRGH);
 					}
 					else {
+						// if both children aren't primitives
+						// we'll eventually have to traverse both in the future
 						pushTime(tstart);
 						pushState(LOADLFT);
 						pushState(SAVELFT);
@@ -398,12 +356,11 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				isectR = isectL;
 				state = popState();
 				node = parent(node);
-				
+
 				toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, RETR)
-				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {				
-				// return GREEN;
+				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
 				if (hasAction(actions, FLIPNORMR)) {
 					isectR.y *= -1.0;
 					isectR.z *= -1.0;
@@ -417,7 +374,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPL)
 				 || (hasAction(actions, LOOPLIFCLOSER) && isectL.x <= isectR.x)) {
-
 				tstart = isectL.x;
 				pushHit(isectR);
 				pushState(LOADRGH);
@@ -440,8 +396,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				toContinue = (stateHead >= 0);
 			}
 			else { // virtual
-				// state = popState();
-				// toContinue = (stateHead >= 0);
 				toContinue = false;
 			}
 		}
