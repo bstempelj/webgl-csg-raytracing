@@ -4,7 +4,7 @@ precision highp float;
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
 // #define DEBUG
-#define NORMALS
+// #define NORMALS
 #define STACKOVERFLOW 1000
 #define TMAX 100.0
 #define STACK_SIZE 10
@@ -414,7 +414,7 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / u_res.xy;
 
 	// generate a ray with origin ro and direction rd
-	vec3 ro = (u_cameraToWorld * vec4(vec3(0,1,3), 1)).xyz;
+	vec3 ro = (u_cameraToWorld * vec4(vec3(0,0,3), 1)).xyz;
 	vec3 rd = normalize((u_cameraToWorld * vec4(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1), 1)).xyz);
 
 #ifdef DEBUG
@@ -438,6 +438,8 @@ void main() {
 #endif // /NORMALS
 	} else {
 		// nice blue gradient for background
+		ro = vec3(0,0,3);
+		rd = vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1);
 	    float t = 0.5*(rd.y + 1.0);
     	col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 	}

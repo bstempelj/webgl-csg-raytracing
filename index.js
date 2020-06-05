@@ -28,7 +28,7 @@ function initRotationSliders(ui) {
 		ui[slider].min = 0.0;
 		ui[slider].max = 360.0;
 		ui[slider].step = 1.0;
-		ui[slider].defaultValue = 0.0;
+		ui[slider].value = 0.0;
 	}
 }
 
@@ -54,7 +54,7 @@ const uniforms = {
 	cameraToWorld: gl.getUniformLocation(program, 'u_cameraToWorld'),
 };
 
-const scene   = interUnion2Scene;
+const scene   = subtrUnion2Scene;
 const csgtree = createTexture(gl, new Uint8Array(scene.tree));
 const spheres = createTexture(gl, new Float32Array(scene.spheres));
 
