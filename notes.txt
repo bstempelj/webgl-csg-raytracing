@@ -12,17 +12,21 @@ return BLACK; // immediate return
 //    /     \
 //  sph0   sph1
 
-states: classify, loadlft, loadrgh
-hits  : sph0.enter, sph1.exit
+states: classify
+hits  : 
 times : 
+actions: miss
 
-i      = 2
-node   = subtr
-state  = classify
-tstart = sph0.enter
+i      = 6
+node   = virtl
+state  = loadlft 
+tstart = sph0.exit
 
-isectL.t = sph0.exit
-isectR.t = sph1.exit
+traverseL = false
+traverseR = true
+
+isectL.t = sph0.enter
+isectR.t = invalid
 
 
 
@@ -35,6 +39,9 @@ i      = 0
 node   = virtl
 state  = gotolft
 tstart = 0.0
+
+traverseL = false
+traverseR = false
 
 isectL.t = 
 isectR.t = 

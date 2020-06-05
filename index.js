@@ -15,6 +15,7 @@ import {
 	subtrScene,
 	union3Scene,
 	interUnion2Scene,
+	subtrUnion2Scene,
 } from './scenes.js';
 
 const canvas = document.getElementById('glcanvas');

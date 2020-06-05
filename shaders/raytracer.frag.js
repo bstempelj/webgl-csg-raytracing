@@ -297,7 +297,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					traverseR = false;
 				}
 
-				if (traverseL || traverseR) {
+				if (traverseL || traverseR) {					
 					if (!traverseL) {
 						pushHit(isectL);
 						pushState(LOADLFT);
@@ -355,7 +355,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				toContinue = (stateHead >= 0);
 			}
 			else if (hasAction(actions, RETR)
-				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {
+				 || (hasAction(actions, RETRIFCLOSER) && isectR.x < isectL.x)) {				
+				// return GREEN;
 				if (hasAction(actions, FLIPNORMR)) {
 					isectR.y *= -1.0;
 					isectR.z *= -1.0;
@@ -369,6 +370,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPL)
 				 || (hasAction(actions, LOOPLIFCLOSER) && isectL.x <= isectR.x)) {
+
 				tstart = isectL.x;
 				pushHit(isectR);
 				pushState(LOADRGH);
@@ -376,6 +378,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPR)
 				 || (hasAction(actions, LOOPRIFCLOSER) && isectR.x < isectL.x)) {
+
 				tstart = isectR.x;
 				pushHit(isectL);
 				pushState(LOADLFT);
@@ -390,8 +393,9 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				toContinue = (stateHead >= 0);
 			}
 			else { // virtual
-				state = popState();
-				toContinue = (stateHead >= 0);
+				// state = popState();
+				// toContinue = (stateHead >= 0);
+				toContinue = false;
 			}
 		}
 		if (i >= STACKOVERFLOW) return PURPLE; // prevent crashing of gl

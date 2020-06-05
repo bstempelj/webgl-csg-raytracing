@@ -101,3 +101,24 @@ export const interUnion2Scene = {
 	],
 	spheres: [-0.5,1,0,1, 0.5,1,0,1, 0,1.5,0,1, 0,0.5,0,1],
 };
+
+//                     virtl
+//                    /     \
+//                   /       \
+//                  /         \
+//             subtr           nil
+//            /     \
+//           /       \
+//          /         \
+//     union           union
+//    /     \         /     \
+//  sph0   sph1     sph2   sph3
+export const subtrUnion2Scene = {
+	tree: [
+		OP,VIRTL,
+		OP,SUBTR, NIL,NIL,
+		OP,UNION, OP,UNION, NIL,NIL, NIL,NIL,
+		LF,0, LF,1, LF,2, LF,3, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL // primitives
+	],
+	spheres: [-0.5,1,0,1, 0.5,1,0,1, 0,1.5,0,1],
+};
