@@ -29,13 +29,11 @@ export function createBuffer(gl, data) {
 	return buffer;
 }
 
-let texUnit = 0;
-export function createTexture(gl, data) {
+export function createTexture(gl, texUnit, data) {
 	const texture = gl.createTexture();
 
 	gl.activeTexture(gl.TEXTURE0 + texUnit);
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-	texUnit++;
 
 	gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 	if (data instanceof Float32Array) {

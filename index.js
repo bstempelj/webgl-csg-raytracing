@@ -12,14 +12,7 @@ import {
 import vShader from './shaders/raytracer.vert.js';
 import fShader from './shaders/raytracer.frag.js';
 
-import {
-	unionScene,
-	interScene,
-	subtrScene,
-	union3Scene,
-	interUnion2Scene,
-	subtrUnion2Scene,
-} from './scenes.js';
+import * as scenes from './scenes.js';
 
 function rad(deg) { return deg * Math.PI / 180; }
 
@@ -32,6 +25,22 @@ function initRotationSliders(ui) {
 	}
 }
 
+function initSceneSwitcher(ui) {
+	for (let scene in scenes) {
+		let opt = document.createElement('option');
+		opt.value = scene;
+		opt.innerHTML = scene;
+		ui.sceneSwitcher.appendChild(opt);		
+	}
+	ui.sceneSwitcher.selectedIndex = 0;
+}
+
+function getSelectedScene(ui) {
+	const dd = ui.sceneSwitcher;
+	const scene = dd.options[dd.selectedIndex].value;
+	return scenes[scene];
+}
+
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
 
@@ -39,8 +48,10 @@ const ui = {
 	xRotation: document.getElementById('xRotation'),
 	yRotation: document.getElementById('yRotation'),
 	zRotation: document.getElementById('zRotation'),
+	sceneSwitcher: document.getElementById('sceneSwitcher'),
 };
 initRotationSliders(ui);
+initSceneSwitcher(ui);
 
 const program = createProgram(gl, vShader, fShader);
 const screenAttr = gl.getAttribLocation(program, 'a_screen');
@@ -54,11 +65,11 @@ const uniforms = {
 	cameraToWorld: gl.getUniformLocation(program, 'u_cameraToWorld'),
 };
 
-const scene   = subtrUnion2Scene;
-const csgtree = createTexture(gl, new Uint8Array(scene.tree));
-const spheres = createTexture(gl, new Float32Array(scene.spheres));
-
 function drawScene() {
+	const scene   = getSelectedScene(ui);
+	const csgtree = createTexture(gl, 0, new Uint8Array(scene.tree));
+	const spheres = createTexture(gl, 1, new Float32Array(scene.spheres));
+
 	setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
 	bindAttribute(gl, screenBuffer, screenAttr, 2);
 	gl.useProgram(program);
