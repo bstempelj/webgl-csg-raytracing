@@ -3,10 +3,40 @@
 <head>
 	<meta charset="utf-8">
 	<title>WebGL SHCRT</title>
-	<style>body { margin: 0; }</style>
+	<style>
+		body {
+			margin: 0;
+			display: flex;
+			font-family: sans-serif;
+		}
+
+		nav {
+			margin-left: 20px;
+		}
+
+		.slider-control {
+			display: flex;
+			align-items: center;
+		}
+	</style>
 </head>
 <body>
 	<canvas id="glcanvas" width="600" height="480"></canvas>
+	<nav>
+		<h2>UI CONTROLS</h2>
+		<div class="slider-control">
+			<label for="xRotation">X:</label>
+			<input type="range" name="xRotation" id="xRotation">
+		</div>
+		<div class="slider-control">
+			<label for="yRotation">Y:</label>
+			<input type="range" name="yRotation" id="yRotation">
+		</div>
+		<div class="slider-control">
+			<label for="zRotation">Z:</label>
+			<input type="range" name="zRotation" id="zRotation">
+		</div>
+	</nav>
 	<script type="module" src="index.js"></script>
 </body>
 </html>
