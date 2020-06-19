@@ -3,7 +3,7 @@ precision highp float;
 
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
-#define DEBUG
+// #define DEBUG
 #define NORMALS
 #define STACKOVERFLOW 1000
 #define TMAX 100.0
@@ -111,14 +111,14 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tmin, float tmax) {
 ////////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 // stack push helpers
-void pushState(int state) { stateStack[++stateHead] = state;   }
-void pushHit(vec4 isect)  { hitStack[++hitHead] = vec4(isect); }
-void pushTime(float t)    { timeStack[++timeHead] = t;         }
+void pushState(int state) { stateStack[++stateHead] = state; }
+void pushHit(vec4 isect)  { hitStack[++hitHead]     = isect; }
+void pushTime(float t)    { timeStack[++timeHead]   = t;     }
 
 // stack pop helpers
 int   popState() { return stateStack[stateHead--]; }
 vec4  popHit()   { return hitStack[hitHead--];     }
-float popTime()  { return timeStack[timeHead--]; }
+float popTime()  { return timeStack[timeHead--];   }
 
 // node access helpers
 int left  (int node) { return 2*node + 1;     }
@@ -381,7 +381,6 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 			}
 			else if (hasAction(actions, LOOPR)
 				 || (hasAction(actions, LOOPRIFCLOSER) && isectR.x < isectL.x)) {
-
 				tstart = isectR.x;
 				pushHit(isectL);
 				pushState(LOADLFT);

@@ -68,6 +68,48 @@ export const subtrScene = {
 //            /     \
 //           /       \
 //          /         \
+//     union           sph2
+//    /     \
+//  sph0   sph1
+export const unionUnionScene = {
+	tree: [
+		OP,VIRTL,
+		OP,UNION, NIL,NIL,
+		OP,UNION, LF,2, NIL,NIL, NIL,NIL,
+		LF,0, LF,1, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL // primitives
+	],
+	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1],
+};
+
+//                     virtl
+//                    /     \
+//                   /       \
+//                  /         \
+//             inter           nil
+//            /     \
+//           /       \
+//          /         \
+//     inter           sph2
+//    /     \
+//  sph0   sph1
+export const interInterScene = {
+	tree: [
+		OP,VIRTL,
+		OP,INTER, NIL,NIL,
+		OP,INTER, LF,2, NIL,NIL, NIL,NIL,
+		LF,0, LF,1, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL // primitives
+	],
+	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1],
+};
+
+//                     virtl
+//                    /     \
+//                   /       \
+//                  /         \
+//             union           nil
+//            /     \
+//           /       \
+//          /         \
 //     union           union
 //    /     \         /     \
 //  sph0   sph1     sph2   sph3
