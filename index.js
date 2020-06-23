@@ -32,7 +32,7 @@ function initSceneSwitcher(ui) {
 		opt.innerHTML = scene;
 		ui.sceneSwitcher.appendChild(opt);		
 	}
-	ui.sceneSwitcher.selectedIndex = 1;
+	ui.sceneSwitcher.selectedIndex = 0;
 }
 
 function getSelectedScene(ui) {
