@@ -62,6 +62,8 @@ const uniforms = {
 	res:     gl.getUniformLocation(program, 'u_res'),
 	csgtree: gl.getUniformLocation(program, 'u_csgtree'),
 	spheres: gl.getUniformLocation(program, 'u_spheres'),
+	boxes:   gl.getUniformLocation(program, 'u_boxes'),
+	cylinders: gl.getUniformLocation(program, 'u_cylinders'),
 	cameraToWorld: gl.getUniformLocation(program, 'u_cameraToWorld'),
 };
 
@@ -69,12 +71,16 @@ function drawScene() {
 	const scene   = getSelectedScene(ui);
 	const csgtree = createTexture(gl, 0, new Uint8Array(scene.tree));
 	const spheres = createTexture(gl, 1, new Float32Array(scene.spheres));
+	const boxes   = createTexture(gl, 2, new Float32Array(scene.boxes));
+	const cylinders = createTexture(gl, 3, new Float32Array(scene.cylinders));
 
 	setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
 	bindAttribute(gl, screenBuffer, screenAttr, 2);
 	gl.useProgram(program);
 	gl.uniform1i(uniforms.csgtree, 0);
 	gl.uniform1i(uniforms.spheres, 1);
+	gl.uniform1i(uniforms.boxes, 2);
+	gl.uniform1i(uniforms.cylinders, 3);
 	gl.uniform2f(uniforms.res, gl.canvas.width, gl.canvas.height);
 
 	// set up cameraToWorld

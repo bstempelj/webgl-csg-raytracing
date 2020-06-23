@@ -12,6 +12,8 @@ precision highp float;
 
 #define INVALID_HIT vec4(-1,0,0,0)
 
+#define M_PI   3.141592653f
+
 // colors
 #define BLACK  vec4(0,0,0,1)
 #define WHITE  vec4(1,1,1,1)
@@ -23,32 +25,31 @@ precision highp float;
 #define PURPLE vec4(1,0,1,1)
 #define ORANGE vec4(1,0.5,0,1)
 
-// node types
-#define NIL   0x0001
-#define OP    0x0002
-#define LF    0x0003
+// states
+#define DOBOTH   0x0001
+#define DOLEFT   0x0002
+#define DORIGHT  0x0003
+#define DONE	 0x0004
 
 // operations
-#define UNION 0x0004
-#define INTER 0x0005
-#define SUBTR 0x0006
+#define UNION    0x0005
+#define INTER    0x0006
+#define SUBTR    0x0007
 
-// states
-#define DOBOTH	0x0007
-#define DOLEFT	0x0008
-#define DORIGHT 0x0009
-#define DONE	0x0010
-
-// primitives
-// #define SPHERE 0
-// #define CUBE 1
-// #define CYLINDER 2
+// node types
+#define NIL      0x0008
+#define OP       0x0009
+#define SPHERE   0x0010
+#define BOX      0x0011
+#define CYLINDER 0x0012
 
 ////////////////////////////////////////////////////////////////////////////////
 // SHADER VARIABLES
 uniform vec2 u_res;
 uniform mediump usampler2D u_csgtree;
 uniform sampler2D u_spheres;
+uniform sampler2D u_boxes;
+uniform sampler2D u_cylinders;
 uniform mat4 u_cameraToWorld;
 
 out vec4 o_fragColor;
@@ -68,10 +69,31 @@ vec4 hitStack3[STACK_SIZE];
 int timeStack[STACK_SIZE];
 
 ////////////////////////////////////////////////////////////////////////////////
+// MATH FUNCTIONS
+mat4 translate( float x, float y, float z )
+{
+    return mat4( 1.0, 0.0, 0.0, 0.0,
+				 0.0, 1.0, 0.0, 0.0,
+				 0.0, 0.0, 1.0, 0.0,
+				 x,   y,   z,   1.0 );
+}
+
+mat4 rotationAxisAngle( vec3 v, float angle )
+{
+    float s = sin( angle );
+    float c = cos( angle );
+    float ic = 1.0 - c;
+
+    return mat4( v.x*v.x*ic + c,     v.y*v.x*ic - s*v.z, v.z*v.x*ic + s*v.y, 0.0,
+                 v.x*v.y*ic + s*v.z, v.y*v.y*ic + c,     v.z*v.y*ic - s*v.x, 0.0,
+                 v.x*v.z*ic - s*v.y, v.y*v.z*ic + s*v.x, v.z*v.z*ic + c,     0.0,
+			     0.0,                0.0,                0.0,                1.0 );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // INTERSECTION FUNCTIONS
-vec4 iSphere(vec3 ro, vec3 rd, int node, float tmin, float tmax) {
-	uvec4 sphNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
-	vec4 sph = texelFetch(u_spheres, ivec2(sphNodeLoc.y, 0), 0);
+vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
+	vec4 sph = texelFetch(u_spheres, ivec2(node, 0), 0);
 
 	invalidHit = false;
 
@@ -99,6 +121,51 @@ vec4 iSphere(vec3 ro, vec3 rd, int node, float tmin, float tmax) {
 	return INVALID_HIT;
 }
 
+// http://iquilezles.org/www/articles/boxfunctions/boxfunctions.htm
+vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
+	vec4 boxOrigin   = texelFetch(u_boxes, ivec2(node,    0), 0);
+	vec4 boxSize     = texelFetch(u_boxes, ivec2(node+1u, 0), 0);
+	vec4 boxRotation = texelFetch(u_boxes, ivec2(node+2u, 0), 0);
+
+	mat4 rotx = rotationAxisAngle(normalize(vec3(1.0,0.0,0.0)), boxRotation.x * (M_PI/180.0));
+	mat4 roty = rotationAxisAngle(normalize(vec3(0.0,1.0,0.0)), boxRotation.y * (M_PI/180.0));
+	mat4 rotz = rotationAxisAngle(normalize(vec3(0.0,0.0,1.0)), boxRotation.z * (M_PI/180.0));
+	mat4 tra = translate(boxOrigin.x, boxOrigin.y, boxOrigin.z);
+	mat4 txi = tra * rotx * roty * rotz; 
+	mat4 txx = inverse(txi);
+
+    // convert from ray to box space
+	vec3 rdd = (txx*vec4(rd,0.0)).xyz;
+	vec3 roo = (txx*vec4(ro,1.0)).xyz;
+
+	// ray-box intersection in box space
+    vec3 m = 1.0/rdd;
+    vec3 n = m*roo;
+    vec3 k = abs(m)*boxSize.xyz;
+	
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+
+	float tN = max( max( t1.x, t1.y ), t1.z );
+	float tF = min( min( t2.x, t2.y ), t2.z );
+	
+	if( tN > tF || tF < 0.0) return INVALID_HIT;
+
+	vec3 norN = -sign(rdd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
+	vec3 norF = -sign(rdd)*step(t2.yzx,t2.xyz)*step(t2.zxy,t2.xyz);
+
+	vec3 nor;
+	if (far) nor = norF;
+	else nor = norN;
+
+    // convert to ray space
+	nor = (txi * vec4(nor,0.0)).xyz;
+
+	if (far) tN = tF;
+
+	return vec4(tN, nor);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 // stack push helpers
@@ -120,7 +187,6 @@ int parent(int node) { return (node - 1) / 2; }
 
 // node type helpers
 bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(OP); }
-bool primitive(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == uint(LF); }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CSG ALGORITHM FUNCTIONS
@@ -320,16 +386,32 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				if (state == DOBOTH || state == DOLEFT) {
 					int c = 0;
 
-					isectL = iSphere(ro, rd, node, TMIN, TMAX);
-					if (!invalidHit) {
-						pushHit(isectL); 
-						c++;
-					}
+					uvec4 geomNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
+					if (geomNodeLoc.x == uint(SPHERE)) {
+						isectL = iSphere(ro, rd, geomNodeLoc.y, TMIN, TMAX);
+						if (!invalidHit) {
+							pushHit(isectL); 
+							c++;
+						}
 
-					isectL_x = iSphere(ro, rd, node, isectL.x, TMAX);
-					if (!invalidHit) {
-						pushHit(isectL_x);
-						c++;
+						isectL_x = iSphere(ro, rd, geomNodeLoc.y, isectL.x, TMAX);
+						if (!invalidHit) {
+							pushHit(isectL_x);
+							c++;
+						}
+					}
+					else if (geomNodeLoc.x == uint(BOX)) {						
+						isectL = iBox(ro, rd, geomNodeLoc.y, false);
+						if (!invalidHit) {
+							pushHit(isectL); 
+							c++;
+						}
+
+						isectL_x = iBox(ro, rd, geomNodeLoc.y, true);
+						if (!invalidHit) {
+							pushHit(isectL_x);
+							c++;
+						}
 					}
 
 					pushTime(c);
@@ -376,7 +458,7 @@ void main() {
 	vec3 rd = normalize((u_cameraToWorld * vec4(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1), 1)).xyz);
 
 #ifdef DEBUG
-	vec3 col = vec3(0.0);
+	vec3 col = vec3(boxRotation.x);
 	vec4 isect = sceneNearestHit(ro, rd);
 	col = isect.xyz;
 #else
