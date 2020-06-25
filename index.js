@@ -39,10 +39,31 @@ gui.add(params, 'scene', Object.keys(scenes)).setValue('unionScene').onChange(fu
 
 function rad(deg) { return deg * Math.PI / 180; }
 
+function resize() {
+  var cssToRealPixels = window.devicePixelRatio || 1;
+
+  // Lookup the size the browser is displaying the canvas in CSS pixels
+  // and compute a size needed to make our drawingbuffer match it in
+  // device pixels.
+  var displayWidth  = Math.floor(document.body.clientWidth  * cssToRealPixels);
+  var displayHeight = Math.floor(document.body.clientHeight * cssToRealPixels);
+
+  // Check if the canvas is not the same size.
+  if (canvas.width  !== displayWidth ||
+      canvas.height !== displayHeight) {
+
+    // Make the canvas the same size
+    canvas.width  = displayWidth;
+    canvas.height = displayHeight;
+  }
+}
+
 const canvas = document.getElementById('glcanvas');
 canvas.width = document.body.clientWidth;
 canvas.height = document.body.clientHeight;
 const gl = canvas.getContext('webgl2');
+
+window.addEventListener('resize', resize);
 
 const ui = {
 	xRotation: document.getElementById('xRotation'),
