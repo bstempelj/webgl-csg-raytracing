@@ -25,7 +25,7 @@ export const unionScene = {
 		OP,UNION,
 		SPHERE,0, SPHERE,1, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6],
 };
 
 //     union
@@ -78,7 +78,7 @@ export const interScene = {
 		OP,INTER,
 		SPHERE,0, SPHERE,1, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6],
 };
 
 
@@ -90,7 +90,7 @@ export const subtrScene = {
 		OP,SUBTR,
 		SPHERE,0, SPHERE,1, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6],
 };
 
 
@@ -107,7 +107,7 @@ export const unionUnionScene = {
 		OP,UNION, SPHERE,2,
 		SPHERE,0, SPHERE,1, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6, 0,-0.5,0,0.6],
 };
 
 //             inter
@@ -123,7 +123,7 @@ export const interInterScene = {
 		OP,INTER, SPHERE,2,
 		SPHERE,0, SPHERE,1, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6, 0,-0.5,0,0.6],
 };
 
 //             union
@@ -139,7 +139,7 @@ export const union3Scene = {
 		OP,UNION, OP,UNION,
 		SPHERE,0, SPHERE,1, SPHERE,2, SPHERE,3, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1, 0,0.5,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6, 0,-0.3,0,0.6, 0,0.3,0,0.6],
 };
 
 //             inter
@@ -155,7 +155,7 @@ export const interUnion2Scene = {
 		OP,UNION, OP,UNION,
 		SPHERE,0, SPHERE,1, SPHERE,2, SPHERE,3, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1, 0,0.5,0,1],
+	spheres: [-0.35,0,0,0.7, 0.35,0,0,0.7, 0,-0.35,0,0.7, 0,0.35,0,0.7],
 };
 
 //             subtr
@@ -171,7 +171,7 @@ export const subtrUnion2Scene = {
 		OP,UNION, OP,UNION,
 		SPHERE,0, SPHERE,1, SPHERE,2, SPHERE,3, // primitives
 	],
-	spheres: [-0.5,0,0,1, 0.5,0,0,1, 0,-0.5,0,1, 0,0.5,0,1],
+	spheres: [-0.3,0,0,0.6, 0.3,0,0,0.6, 0,-0.3,0,0.6, 0,0.3,0,0.6],
 };
 
 //             subtr

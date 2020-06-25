@@ -1,3 +1,5 @@
+import * as dat from './vendor/dat.gui/dat.gui.module.js';
+
 import * as m4 from './math/m4.js';
 import * as m3 from './math/m3.js';
 
@@ -14,34 +16,32 @@ import fShader from './shaders/raytracer.frag.js';
 
 import * as scenes from './scenes.js';
 
+const gui = new dat.GUI();
+const params = {
+	xRotation: 0,
+	yRotation: 0,
+	zRotation: 0,
+	scene: '',
+	resetOrientation: function() {
+		params.xRotation = 0;
+		params.yRotation = 0;
+		params.zRotation = 0;
+	}
+};
+
+gui.add(params, 'xRotation').min(-180).max(180).step(1).listen();
+gui.add(params, 'yRotation').min(-180).max(180).step(1).listen();
+gui.add(params, 'zRotation').min(-180).max(180).step(1).listen();
+gui.add(params, 'resetOrientation');
+gui.add(params, 'scene', Object.keys(scenes)).setValue('unionScene').onChange(function(newScene) {
+	params.scene = newScene;
+});
+
 function rad(deg) { return deg * Math.PI / 180; }
 
-function initRotationSliders(ui) {
-	for (let slider in ui) {
-		ui[slider].min = -180.0;
-		ui[slider].max = 180.0;
-		ui[slider].step = 1.0;
-		ui[slider].value = 0.0;
-	}
-}
-
-function initSceneSwitcher(ui) {
-	for (let scene in scenes) {
-		let opt = document.createElement('option');
-		opt.value = scene;
-		opt.innerHTML = scene;
-		ui.sceneSwitcher.appendChild(opt);		
-	}
-	ui.sceneSwitcher.selectedIndex = 0;
-}
-
-function getSelectedScene(ui) {
-	const dd = ui.sceneSwitcher;
-	const scene = dd.options[dd.selectedIndex].value;
-	return scenes[scene];
-}
-
 const canvas = document.getElementById('glcanvas');
+canvas.width = document.body.clientWidth;
+canvas.height = document.body.clientHeight;
 const gl = canvas.getContext('webgl2');
 
 const ui = {
@@ -50,8 +50,8 @@ const ui = {
 	zRotation: document.getElementById('zRotation'),
 	sceneSwitcher: document.getElementById('sceneSwitcher'),
 };
-initRotationSliders(ui);
-initSceneSwitcher(ui);
+// initRotationSliders(ui);
+// initSceneSwitcher(ui);
 
 const program = createProgram(gl, vShader, fShader);
 const screenAttr = gl.getAttribLocation(program, 'a_screen');
@@ -68,10 +68,10 @@ const uniforms = {
 };
 
 function drawScene() {
-	const scene   = getSelectedScene(ui);
-	const csgtree = createTexture(gl, 0, new Uint8Array(scene.tree));
-	const spheres = createTexture(gl, 1, new Float32Array(scene.spheres));
-	const boxes   = createTexture(gl, 2, new Float32Array(scene.boxes));
+	const scene     = scenes[params.scene];
+	const csgtree   = createTexture(gl, 0, new Uint8Array(scene.tree));
+	const spheres   = createTexture(gl, 1, new Float32Array(scene.spheres));
+	const boxes     = createTexture(gl, 2, new Float32Array(scene.boxes));
 	const cylinders = createTexture(gl, 3, new Float32Array(scene.cylinders));
 
 	setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
@@ -84,9 +84,9 @@ function drawScene() {
 	gl.uniform2f(uniforms.res, gl.canvas.width, gl.canvas.height);
 
 	// set up cameraToWorld
-	let cameraToWorld = m4.xRotation(rad(ui.xRotation.value));
-	cameraToWorld = m4.multiply(cameraToWorld, m4.yRotation(rad(ui.yRotation.value)));
-	cameraToWorld = m4.multiply(cameraToWorld, m4.zRotation(rad(ui.zRotation.value)));
+	let cameraToWorld = m4.xRotation(rad(params.xRotation));
+	cameraToWorld = m4.multiply(cameraToWorld, m4.yRotation(rad(params.yRotation)));
+	cameraToWorld = m4.multiply(cameraToWorld, m4.zRotation(rad(params.zRotation)));
 	gl.uniformMatrix4fv(uniforms.cameraToWorld, false, cameraToWorld);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }

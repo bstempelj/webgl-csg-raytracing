@@ -6,42 +6,13 @@
 	<style>
 		body {
 			margin: 0;
-			display: flex;
-			font-family: sans-serif;
-		}
-
-		nav {
-			margin-left: 20px;
-		}
-
-		.slider-control {
-			display: flex;
-			align-items: center;
+			width: 100%;
+			height: 100vh;
 		}
 	</style>
 </head>
 <body>
-	<canvas id="glcanvas" width="600" height="480"></canvas>
-	<nav>
-		<h2>UI CONTROLS</h2>
-
-		<h3>Rotation controls</h3>
-		<div class="slider-control">
-			<label for="xRotation">X:</label>
-			<input type="range" name="xRotation" id="xRotation">
-		</div>
-		<div class="slider-control">
-			<label for="yRotation">Y:</label>
-			<input type="range" name="yRotation" id="yRotation">
-		</div>
-		<div class="slider-control">
-			<label for="zRotation">Z:</label>
-			<input type="range" name="zRotation" id="zRotation">
-		</div>
-
-		<h3>Scene switcher</h3>
-		<select id="sceneSwitcher" name="scene-switcher"></select>
-	</nav>
+	<canvas id="glcanvas"></canvas>
 	<script type="module" src="index.js"></script>
 </body>
 </html>
