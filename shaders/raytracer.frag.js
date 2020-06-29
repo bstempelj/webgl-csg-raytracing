@@ -165,6 +165,42 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	return vec4(tN, nor);
 }
 
+// https://iquilezles.org/www/articles/intersectors/intersectors.htm
+vec4 iCylinder(vec3 ro, vec3 rd, uint node) { // extreme a, extreme b, radius
+	vec4 cylA = texelFetch(u_cylinders, ivec2(node, 0), 0);
+	vec4 cylB = texelFetch(u_cylinders, ivec2(node+1u, 0), 0);
+
+	vec3 pa = cylA.xyz;
+	vec3 pb = cylB.xyz;
+	float ra = cylA.w;
+
+    vec3 ba = pb-pa;
+    vec3 oc = ro - pa;
+
+    float baba = dot(ba,ba);
+    float bard = dot(ba,rd);
+    float baoc = dot(ba,oc);
+    
+    float k2 = baba            - bard*bard;
+    float k1 = baba*dot(oc,rd) - baoc*bard;
+    float k0 = baba*dot(oc,oc) - baoc*baoc - ra*ra*baba;
+    
+    float h = k1*k1 - k2*k0;
+    if(h<0.0) return INVALID_HIT;
+    h = sqrt(h);
+    float t = (-k1-h)/k2;
+
+    // body
+    float y = baoc + t*bard;
+    if(y>0.0 && y<baba) return vec4(t, (oc+t*rd - ba*y/baba)/ra);
+    
+    // caps
+    t = (((y<0.0) ? 0.0 : baba) - baoc)/bard;
+    if(abs(k1+k2*t)<h) return vec4(t, ba*sign(y)/baba);
+
+    return INVALID_HIT;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 // stack push helpers
@@ -409,6 +445,19 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 						}
 
 						isectL_x = iBox(ro, rd, geomNodeLoc.y, true);
+						if (!invalidHit) {
+							pushHit(isectL_x);
+							c++;
+						}
+					}
+					else if (geomNodeLoc.x == uint(CYLINDER)) {
+						isectL = iCylinder(ro, rd, geomNodeLoc.y);
+						if (!invalidHit) {
+							pushHit(isectL);
+							c++;
+						}
+
+						isectL_x = iCylinder(ro, rd, geomNodeLoc.y);
 						if (!invalidHit) {
 							pushHit(isectL_x);
 							c++;
