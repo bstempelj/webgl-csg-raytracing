@@ -171,14 +171,14 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 // stack push helpers
 void pushState(int state) { stateStack[++stateHead] = state; }
 void pushHit(vec4 isect)  { hitStack[++hitHead]     = isect; }
-void pushHit2(vec4 isect) { hitStack2[++hitHead2] = isect; }
-void pushTime(int t)    { timeStack[++timeHead]   = t;     }
+void pushHit2(vec4 isect) { hitStack2[++hitHead2] = isect;   }
+void pushTime(int t)      { timeStack[++timeHead]   = t;     }
 
 // stack pop helpers
-int   popState() { return stateStack[stateHead--]; }
-vec4  popHit()   { return hitStack[hitHead--];     }
-vec4  popHit2() { return hitStack2[hitHead2--]; }
-int popTime()  { return timeStack[timeHead--];   }
+int  popState() { return stateStack[stateHead--]; }
+vec4 popHit()   { return hitStack[hitHead--];     }
+vec4 popHit2()  { return hitStack2[hitHead2--];   }
+int  popTime()  { return timeStack[timeHead--];   }
 
 // node access helpers
 int left  (int node) { return 2*node + 1;     }
@@ -191,12 +191,14 @@ bool operation(int node) { return texelFetch(u_csgtree, ivec2(node, 0), 0).x == 
 ////////////////////////////////////////////////////////////////////////////////
 // CSG ALGORITHM FUNCTIONS
 vec4 sceneNearestHit(vec3 ro, vec3 rd) {
-	float tstart = 0.0;
+	float tstart = 0.001;
 	int node = 0;
 	int state = DOBOTH;
 
-	vec4 isectL, isectR;
-	vec4 isectL_x, isectR_x;
+	pushState(DONE);
+
+	vec4 isectL, isectR;     // enter intersection
+	vec4 isectL_x, isectR_x; // exit intersection
 
 	int i = 0; // for debugging
 	for (bool toContinue = true; toContinue; i++) {

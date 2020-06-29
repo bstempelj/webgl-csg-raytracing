@@ -16,6 +16,8 @@ import fShader from './shaders/raytracer.frag.js';
 
 import * as scenes from './scenes.js';
 
+const DEV = false;
+
 const gui = new dat.GUI();
 const params = {
 	xRotation: 0,
@@ -33,7 +35,7 @@ gui.add(params, 'xRotation').min(-180).max(180).step(1).listen();
 gui.add(params, 'yRotation').min(-180).max(180).step(1).listen();
 gui.add(params, 'zRotation').min(-180).max(180).step(1).listen();
 gui.add(params, 'resetOrientation');
-gui.add(params, 'scene', Object.keys(scenes)).setValue('unionScene').onChange(function(newScene) {
+gui.add(params, 'scene', Object.keys(scenes)).setValue('interBoxScene').onChange(function(newScene) {
 	params.scene = newScene;
 });
 
@@ -58,12 +60,13 @@ function resize() {
   }
 }
 
-const canvas = document.getElementById('glcanvas');
-canvas.width = document.body.clientWidth;
-canvas.height = document.body.clientHeight;
+const canvas  = document.getElementById('glcanvas');
+canvas.width  = (DEV) ? 400 : document.body.clientWidth;
+canvas.height = (DEV) ? 300 : document.body.clientHeight;
+console.log(canvas.width, canvas.height);
 const gl = canvas.getContext('webgl2');
 
-window.addEventListener('resize', resize);
+if (!DEV) window.addEventListener('resize', resize);
 
 const ui = {
 	xRotation: document.getElementById('xRotation'),
