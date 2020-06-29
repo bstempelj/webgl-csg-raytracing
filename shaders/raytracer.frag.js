@@ -3,7 +3,6 @@ precision highp float;
 
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
-// #define DEBUG
 #define NORMALS
 #define STACKOVERFLOW 1000
 #define TMIN -100.0
@@ -131,7 +130,7 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	mat4 roty = rotationAxisAngle(normalize(vec3(0.0,1.0,0.0)), boxRotation.y * (M_PI/180.0));
 	mat4 rotz = rotationAxisAngle(normalize(vec3(0.0,0.0,1.0)), boxRotation.z * (M_PI/180.0));
 	mat4 tra = translate(boxOrigin.x, boxOrigin.y, boxOrigin.z);
-	mat4 txi = tra * rotx * roty * rotz; 
+	mat4 txi = tra * rotx * roty * rotz;
 	mat4 txx = inverse(txi);
 
     // convert from ray to box space
@@ -142,13 +141,13 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
     vec3 m = 1.0/rdd;
     vec3 n = m*roo;
     vec3 k = abs(m)*boxSize.xyz;
-	
+
     vec3 t1 = -n - k;
     vec3 t2 = -n + k;
 
 	float tN = max( max( t1.x, t1.y ), t1.z );
 	float tF = min( min( t2.x, t2.y ), t2.z );
-	
+
 	if( tN > tF || tF < 0.0) return INVALID_HIT;
 
 	vec3 norN = -sign(rdd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
@@ -245,17 +244,17 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 								pushHit2(isectR); // save right enter
 								storeCount += 2;
 							}
-							else if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right exit is inside left object							
+							else if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right exit is inside left object
 								pushHit2(isectR_x); // save right exit
 								pushHit2(isectL);	// save left enter
 								storeCount += 2;
 							}
-							else if (isectL.x > isectR.x && isectL_x.x < isectR_x.x) { // if left object is completly inside right object							
+							else if (isectL.x > isectR.x && isectL_x.x < isectR_x.x) { // if left object is completly inside right object
 								pushHit2(isectL_x);
 								pushHit2(isectL); // save left enter and exit
 								storeCount += 2;
 							}
-							else if ((isectL.x == isectR.x) && (isectL_x.x == isectR_x.x)) {// edge case - if both object same size and same position, then just grab left object							
+							else if ((isectL.x == isectR.x) && (isectL_x.x == isectR_x.x)) {// edge case - if both object same size and same position, then just grab left object
 								pushHit2(isectL_x);
 								pushHit2(isectL); // save left enter and exit
 								storeCount += 2;
@@ -288,7 +287,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					// enter hit is always followed by exit hit of the same object or same part of an object
 					int storeCount = 0;
 					hitHead2 = -1; // reset second stack
-					int extraOnSecond = 0;					
+					int extraOnSecond = 0;
 
 					for (int x = 0; x < hitNumLeft; x += 2) {
 						isectL = hitStack[hitHead - hitNumRight - hitNumLeft + 1 + x];			// get enter from left branch
@@ -299,7 +298,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 						hitStack3[1] = isectL_x;
 						hitHead3 = 1;
 						extraOnSecond = 0;
-						
+
 						for (int y = 0; y < hitNumRight; y += 2) {
 							isectR = hitStack[hitHead - hitNumRight + 1 + y];	// get enter from right branch
 							isectR_x = hitStack[hitHead - hitNumRight + 1 + y + 1]; // get exit from right branch
@@ -308,8 +307,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 								isectL = hitStack3[z];
 								isectL_x = hitStack3[z+1];
 
-								if (isectR.x > isectL.x && isectR.x < isectL_x.x) { // if right enter is inside left object								
-									if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right enter and exit are inside left object									
+								if (isectR.x > isectL.x && isectR.x < isectL_x.x) { // if right enter is inside left object
+									if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right enter and exit are inside left object
 										pushHit2(isectL_x); // save left exit as exit
 										isectR_x.y *= -1.0;
 										isectR_x.z *= -1.0;
@@ -326,7 +325,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 									extraOnSecond += 2;
 								}
-								else if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right exit is inside left object								
+								else if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right exit is inside left object
 									pushHit2(isectL_x); // save left exit as exit
 									isectR_x.y *= -1.0;
 									isectR_x.z *= -1.0;
@@ -335,7 +334,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 									extraOnSecond += 2;
 								}
-								else if ((isectL.x < isectR.x && isectL_x.x < isectR_x.x) || (isectL.x > isectR.x && isectL_x.x > isectR_x.x)) { // if right is nowhere near left								
+								else if ((isectL.x < isectR.x && isectL_x.x < isectR_x.x) || (isectL.x > isectR.x && isectL_x.x > isectR_x.x)) { // if right is nowhere near left
 									pushHit2(isectL_x); // save both left points as they were
 									pushHit2(isectL);
 									extraOnSecond += 2;
@@ -392,7 +391,7 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					if (geomNodeLoc.x == uint(SPHERE)) {
 						isectL = iSphere(ro, rd, geomNodeLoc.y, TMIN, TMAX);
 						if (!invalidHit) {
-							pushHit(isectL); 
+							pushHit(isectL);
 							c++;
 						}
 
@@ -402,10 +401,10 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 							c++;
 						}
 					}
-					else if (geomNodeLoc.x == uint(BOX)) {						
+					else if (geomNodeLoc.x == uint(BOX)) {
 						isectL = iBox(ro, rd, geomNodeLoc.y, false);
 						if (!invalidHit) {
-							pushHit(isectL); 
+							pushHit(isectL);
 							c++;
 						}
 
@@ -459,11 +458,6 @@ void main() {
 	vec3 ro = (u_cameraToWorld * vec4(vec3(0,0,3), 1)).xyz;
 	vec3 rd = normalize((u_cameraToWorld * vec4(vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1), 1)).xyz);
 
-#ifdef DEBUG
-	vec3 col = vec3(boxRotation.x);
-	vec4 isect = sceneNearestHit(ro, rd);
-	col = isect.xyz;
-#else
 	// intersect ray with 3d scene
 	vec4 isect = sceneNearestHit(ro, rd);
 
@@ -485,7 +479,6 @@ void main() {
 	    float t = 0.5*(rd.y + 1.0);
     	col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 	}
-#endif // DEBUG
 	o_fragColor = vec4(col,1);
 }
 `;
