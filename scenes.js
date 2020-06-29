@@ -17,6 +17,41 @@ const BOX      = 0x0011;
 const CYLINDER = 0x0012;
 
 
+export const complexScene = {
+	tree: [
+		// OP,INTER,
+		// BOX,0, SPHERE,0,
+
+		// OP,UNION,
+		// CYLINDER,0, CYLINDER,2
+
+		OP,SUBTR,
+		OP,INTER, OP,UNION,
+		BOX,0, SPHERE,0, CYLINDER,0, CYLINDER,2
+	],
+	spheres: [0,0,0,0.6],
+	boxes: [0,0,0,0, 0.5,0.5,0.5,0, 0,0,0,0], // origin, size, rotation
+	cylinders: [
+		0.0, 0.75, 0.0, 0.3,   0.0, -0.75, 0.0, 0.3, // cyl0
+		0.75, 0.0, 0.0, 0.3,  -0.75,  0.0, 0.0, 0.3, // cyl1
+	],
+};
+
+
+//     union
+//    /     \
+//  cyl0   cyl1
+export const unionCylinderScene = {
+	tree: [
+		OP,UNION,
+		CYLINDER,0, CYLINDER,2, // primitives
+	],
+	cylinders: [
+		0.0, 0.75, 0.0, 0.3,   0.0, -0.75, 0.0, 0.3, // cyl0
+		0.75, 0.0, 0.0, 0.3,  -0.75,  0.0, 0.0, 0.3, // cyl1
+	],
+};
+
 //     union
 //    /     \
 //  sph0   sph1
