@@ -120,11 +120,32 @@ vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
 	return INVALID_HIT;
 }
 
-// http://iquilezles.org/www/articles/boxfunctions/boxfunctions.htm
+vec3 nBox(vec3 ro, vec3 rd, vec3 hit, vec3 bmin, vec3 bmax) {
+	vec3 c = (bmin + bmax) * 0.5;
+	vec3 p = hit - c;
+	vec3 d = (bmin - bmax) * 0.5;
+	float bias = 1.000001;
+
+	float nx = float(int(p.x / abs(d.x) * bias));
+	float ny = float(int(p.y / abs(d.y) * bias));
+	float nz = float(int(p.z / abs(d.z) * bias));
+
+	return normalize(vec3(nx, ny, nz));
+}
+
+void swap(inout float tmin, inout float tmax) {
+	float temp = tmin;
+	tmin = tmax;
+	tmax = temp;
+}
+
 vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	vec4 boxOrigin   = texelFetch(u_boxes, ivec2(node,    0), 0);
 	vec4 boxSize     = texelFetch(u_boxes, ivec2(node+1u, 0), 0);
 	vec4 boxRotation = texelFetch(u_boxes, ivec2(node+2u, 0), 0);
+
+	vec3 bmin = (boxOrigin - boxSize).xyz;
+	vec3 bmax = (boxOrigin + boxSize).xyz;
 
 	mat4 rotx = rotationAxisAngle(normalize(vec3(1.0,0.0,0.0)), boxRotation.x * (M_PI/180.0));
 	mat4 roty = rotationAxisAngle(normalize(vec3(0.0,1.0,0.0)), boxRotation.y * (M_PI/180.0));
@@ -133,36 +154,54 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	mat4 txi = tra * rotx * roty * rotz;
 	mat4 txx = inverse(txi);
 
-    // convert from ray to box space
-	vec3 rdd = (txx*vec4(rd,0.0)).xyz;
-	vec3 roo = (txx*vec4(ro,1.0)).xyz;
+	// convert from ray to box space
+	rd = (txx*vec4(rd,0.0)).xyz;
+	ro = (txx*vec4(ro,1.0)).xyz;
 
-	// ray-box intersection in box space
-    vec3 m = 1.0/rdd;
-    vec3 n = m*roo;
-    vec3 k = abs(m)*boxSize.xyz;
-
-    vec3 t1 = -n - k;
-    vec3 t2 = -n + k;
-
-	float tN = max( max( t1.x, t1.y ), t1.z );
-	float tF = min( min( t2.x, t2.y ), t2.z );
-
-	if( tN > tF || tF < 0.0) return INVALID_HIT;
-
-	vec3 norN = -sign(rdd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
-	vec3 norF = -sign(rdd)*step(t2.yzx,t2.xyz)*step(t2.zxy,t2.xyz);
-
-	vec3 nor;
-	if (far) nor = norF;
-	else nor = norN;
-
-    // convert to ray space
-	nor = (txi * vec4(nor,0.0)).xyz;
-
-	if (far) tN = tF;
-
-	return vec4(tN, nor);
+	float tmin = (bmin.x - ro.x) / rd.x; 
+	float tmax = (bmax.x - ro.x) / rd.x; 
+ 
+	if (tmin > tmax) swap(tmin, tmax); 
+ 
+	float tymin = (bmin.y - ro.y) / rd.y; 
+	float tymax = (bmax.y - ro.y) / rd.y; 
+ 
+	if (tymin > tymax) swap(tymin, tymax); 
+ 
+	if ((tmin > tymax) || (tymin > tmax)) 
+		return INVALID_HIT; 
+ 
+	if (tymin > tmin) 
+		tmin = tymin; 
+ 
+	if (tymax < tmax) 
+		tmax = tymax; 
+ 
+	float tzmin = (bmin.z - ro.z) / rd.z; 
+	float tzmax = (bmax.z - ro.z) / rd.z; 
+ 
+	if (tzmin > tzmax) swap(tzmin, tzmax); 
+ 
+	if ((tmin > tzmax) || (tzmin > tmax)) 
+		return INVALID_HIT; 
+ 
+	if (tzmin > tmin) 
+		tmin = tzmin; 
+ 
+	if (tzmax < tmax) 
+		tmax = tzmax; 
+ 
+ 	if (!far) {
+ 		vec3 hit = (ro + tmin*rd);
+ 		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
+		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+ 		return vec4(tmin, nor);
+ 	} else {
+ 		vec3 hit = (ro + tmax*rd);
+ 		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
+ 		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+ 		return vec4(tmax, nor);
+ 	}
 }
 
 // https://iquilezles.org/www/articles/intersectors/intersectors.htm
