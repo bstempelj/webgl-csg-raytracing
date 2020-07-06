@@ -105,6 +105,20 @@ export const subtrBoxScene = {
 	],
 };
 
+//     subtr
+//    /     \
+//  box0   box1
+export const subtrBoxScene2 = {
+	tree: [
+		OP,SUBTR,
+		BOX,0, BOX,3, // primitives
+	],
+	boxes: [
+		 0,0,0,0,    0.5,0.5,0.5,0, 0,0,0,0, // origin, size, rotation
+		 0.25,0.25,0,0, 0.5,0.5,0.5,0, 0,60,0,0,
+	],
+};
+
 //     inter
 //    /     \
 //  sph0   sph1
