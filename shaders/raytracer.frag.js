@@ -7,7 +7,7 @@ precision highp float;
 #define STACKOVERFLOW 1000
 #define TMIN -100.0
 #define TMAX 100.0
-#define STACK_SIZE 10
+#define STACK_SIZE 15
 
 #define INVALID_HIT vec4(-1,0,0,0)
 
@@ -69,24 +69,22 @@ int timeStack[STACK_SIZE];
 
 ////////////////////////////////////////////////////////////////////////////////
 // MATH FUNCTIONS
-mat4 translate( float x, float y, float z )
-{
-    return mat4( 1.0, 0.0, 0.0, 0.0,
-				 0.0, 1.0, 0.0, 0.0,
-				 0.0, 0.0, 1.0, 0.0,
-				 x,   y,   z,   1.0 );
+mat4 translate(float x, float y, float z) {
+	return mat4(1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				x,   y,   z,   1.0);
 }
 
-mat4 rotationAxisAngle( vec3 v, float angle )
-{
-    float s = sin( angle );
-    float c = cos( angle );
-    float ic = 1.0 - c;
+mat4 rotationAxisAngle(vec3 v, float angle ) {
+	float s = sin(angle);
+	float c = cos(angle);
+	float ic = 1.0 - c;
 
-    return mat4( v.x*v.x*ic + c,     v.y*v.x*ic - s*v.z, v.z*v.x*ic + s*v.y, 0.0,
-                 v.x*v.y*ic + s*v.z, v.y*v.y*ic + c,     v.z*v.y*ic - s*v.x, 0.0,
-                 v.x*v.z*ic - s*v.y, v.y*v.z*ic + s*v.x, v.z*v.z*ic + c,     0.0,
-			     0.0,                0.0,                0.0,                1.0 );
+	return mat4(v.x*v.x*ic + c,     v.y*v.x*ic - s*v.z, v.z*v.x*ic + s*v.y, 0.0,
+				v.x*v.y*ic + s*v.z, v.y*v.y*ic + c,     v.z*v.y*ic - s*v.x, 0.0,
+				v.x*v.z*ic - s*v.y, v.y*v.z*ic + s*v.x, v.z*v.z*ic + c,     0.0,
+				0.0,                0.0,                0.0,                1.0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -120,6 +118,7 @@ vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
 	return INVALID_HIT;
 }
 
+// https://blog.johnnovak.net/2016/10/22/the-nim-raytracer-project-part-4-calculating-box-normals/
 vec3 nBox(vec3 ro, vec3 rd, vec3 hit, vec3 bmin, vec3 bmax) {
 	vec3 c = (bmin + bmax) * 0.5;
 	vec3 p = hit - c;
@@ -191,54 +190,102 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	if (tzmax < tmax) 
 		tmax = tzmax; 
  
- 	if (!far) {
- 		vec3 hit = (ro + tmin*rd);
- 		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
+	if (!far) {
+		vec3 hit = (ro + tmin*rd);
+		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
 		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
- 		return vec4(tmin, nor);
- 	} else {
- 		vec3 hit = (ro + tmax*rd);
- 		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
- 		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
- 		return vec4(tmax, nor);
- 	}
+		return vec4(tmin, nor);
+	} else {
+		vec3 hit = (ro + tmax*rd);
+		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
+		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+		return vec4(tmax, nor);
+	}
 }
 
-// https://iquilezles.org/www/articles/intersectors/intersectors.htm
-vec4 iCylinder(vec3 ro, vec3 rd, uint node) { // extreme a, extreme b, radius
-	vec4 cylA = texelFetch(u_cylinders, ivec2(node, 0), 0);
-	vec4 cylB = texelFetch(u_cylinders, ivec2(node+1u, 0), 0);
+vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
+	vec4 cylRotation = texelFetch(u_cylinders, ivec2(node, 0), 0);
 
-	vec3 pa = cylA.xyz;
-	vec3 pb = cylB.xyz;
-	float ra = cylA.w;
+	mat4 rotx = rotationAxisAngle(normalize(vec3(1.0,0.0,0.0)), cylRotation.x * (M_PI/180.0));
+	mat4 roty = rotationAxisAngle(normalize(vec3(0.0,1.0,0.0)), cylRotation.y * (M_PI/180.0));
+	mat4 rotz = rotationAxisAngle(normalize(vec3(0.0,0.0,1.0)), cylRotation.z * (M_PI/180.0));
+	// mat4 tra = translate(boxOrigin.x, boxOrigin.y, boxOrigin.z);
+	// mat4 txi = tra * rotx * roty * rotz;
+	mat4 txi = rotx * roty * rotz;
+	mat4 txx = inverse(txi);
 
-    vec3 ba = pb-pa;
-    vec3 oc = ro - pa;
+	// convert from ray to cylinder space
+	rd = (txx*vec4(rd, 0)).xyz;
+	ro = (txx*vec4(ro, 1)).xyz;
 
-    float baba = dot(ba,ba);
-    float bard = dot(ba,rd);
-    float baoc = dot(ba,oc);
+	// mat4 yRotate = rotationAxisAngle(vec3(0,1,0), 90.0);
+	// mat4 xRotate = rotationAxisAngle(vec3(1,0,0), 90.0);
+
+	// ro = (yRotate * vec4(ro, 0)).xyz;
+	// rd = (yRotate * vec4(rd, 1)).xyz;
+
+	// quadratic x^2 + y^2 = 0.5^2 => (ro.x + t*rd.x)^2 + (ro.y + t*rd.y)^2 = 0.5
+	float a = dot(rd.xy, rd.xy);
+	float b = dot(ro.xy, rd.xy);
+	float c = dot(ro.xy, ro.xy) - 0.5;
+
+	float delta = b * b - a * c;
+	if (delta < 0.0) return INVALID_HIT;
+
+	// 2 roots
+	float deltasqrt = sqrt(delta);
+	float arcp = 1.0 / a;
+	float t0 = (-b - deltasqrt) * arcp;
+	float t1 = (-b + deltasqrt) * arcp;
+	
+	// order roots
+	float temp = min(t1, t0);
+	t1 = max(t1, t0);
+	t0 = temp;
+
+	float znear = ro.z + t0 * rd.z;
+	float zfar  = ro.z + t1 * rd.z;
+
+	// top, bottom
+	vec2 zcap = vec2(1.5, -1.5);
+	vec2 cap = (zcap - ro.z) / rd.z;
+
+	if (znear < zcap.y)
+		t0 = cap.y;
+	else if (znear > zcap.x)
+		t0 = cap.x;
+
+	if (zfar < zcap.y)
+		t1 = cap.y;
+	else if (zfar > zcap.x)
+		t1 = cap.x;
     
-    float k2 = baba            - bard*bard;
-    float k1 = baba*dot(oc,rd) - baoc*bard;
-    float k0 = baba*dot(oc,oc) - baoc*baoc - ra*ra*baba;
-    
-    float h = k1*k1 - k2*k0;
-    if(h<0.0) return INVALID_HIT;
-    h = sqrt(h);
-    float t = (-k1-h)/k2;
+    if (!(t1 > 0.0 && t1 > t0)) return INVALID_HIT;
 
-    // body
-    float y = baoc + t*bard;
-    if(y>0.0 && y<baba) return vec4(t, (oc+t*rd - ba*y/baba)/ra);
-    
-    // caps
-    t = (((y<0.0) ? 0.0 : baba) - baoc)/bard;
-    if(abs(k1+k2*t)<h) return vec4(t, ba*sign(y)/baba);
+    vec3 nor;
+    if (!far) {
+    	vec3 pt = ro + t0*rd;
+    	vec3 cen = vec3(0, 0, (zcap.x-zcap.y)/2.0);
+    	
+    	if (pt.z == cap.y) nor = normalize(vec3(0, 0,  1)); // near
+    	else if (pt.z == cap.x) nor = normalize(vec3(0, 0, -1)); // far
+    	else nor = normalize(vec3(pt.x-cen.x, pt.y, pt.z));
 
-    return INVALID_HIT;
+    	nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+    	return vec4(t0, nor);
+	} else {
+		vec3 pt = ro + t1*rd;
+		vec3 cen = vec3(0, 0, (zcap.x-zcap.y)/2.0);
+		
+		if (pt.z == cap.y) nor = normalize(vec3(pt.x, pt.y,  1)); // near
+		else if (pt.z == cap.x) nor = normalize(vec3(pt.x, pt.y, -1)); // far
+		else nor = normalize(vec3(pt.x-cen.x, pt.y, pt.z));
+
+		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+		return vec4(t1, nor);
+	}
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
@@ -490,13 +537,13 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 						}
 					}
 					else if (geomNodeLoc.x == uint(CYLINDER)) {
-						isectL = iCylinder(ro, rd, geomNodeLoc.y);
+						isectL = iCylinder(ro, rd, geomNodeLoc.y, false);
 						if (!invalidHit) {
 							pushHit(isectL);
 							c++;
 						}
 
-						isectL_x = iCylinder(ro, rd, geomNodeLoc.y);
+						isectL_x = iCylinder(ro, rd, geomNodeLoc.y, true);
 						if (!invalidHit) {
 							pushHit(isectL_x);
 							c++;
@@ -564,8 +611,8 @@ void main() {
 		// nice blue gradient for background
 		ro = vec3(0,0,3);
 		rd = vec3((-1.0+2.0*uv)*vec2(1.0, aspect), -1);
-	    float t = 0.5*(rd.y + 1.0);
-    	col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+		float t = 0.5*(rd.y + 1.0);
+		col = (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 	}
 	o_fragColor = vec4(col,1);
 }

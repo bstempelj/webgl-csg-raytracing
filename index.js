@@ -1,10 +1,7 @@
 import * as dat from './vendor/dat.gui/dat.gui.module.js';
-
 import * as m4 from './math/m4.js';
-import * as m3 from './math/m3.js';
 
 import {
-	createShader,
 	createProgram,
 	createBuffer,
 	createTexture,
@@ -35,7 +32,7 @@ gui.add(params, 'xRotation').min(-180).max(180).step(1).listen();
 gui.add(params, 'yRotation').min(-180).max(180).step(1).listen();
 gui.add(params, 'zRotation').min(-180).max(180).step(1).listen();
 gui.add(params, 'resetOrientation');
-gui.add(params, 'scene', Object.keys(scenes)).setValue('subtrBoxScene2').onChange(function(newScene) {
+gui.add(params, 'scene', Object.keys(scenes)).setValue('interCylinderScene').onChange(function(newScene) {
 	params.scene = newScene;
 });
 
