@@ -265,23 +265,19 @@ vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
     vec3 nor;
     if (!far) {
     	vec3 pt = ro + t0*rd;
-    	vec3 cen = vec3(0, 0, (zcap.x-zcap.y)/2.0);
-    	
     	if (pt.z == cap.y) nor = normalize(vec3(0, 0,  1)); // near
     	else if (pt.z == cap.x) nor = normalize(vec3(0, 0, -1)); // far
-    	else nor = normalize(vec3(pt.x-cen.x, pt.y, pt.z));
+    	else nor = normalize(vec3(pt.x, pt.y, 0));
 
-    	nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+    	nor = (txi * vec4(nor, 0)).xyz; // convert to ray space
     	return vec4(t0, nor);
 	} else {
 		vec3 pt = ro + t1*rd;
-		vec3 cen = vec3(0, 0, (zcap.x-zcap.y)/2.0);
-		
 		if (pt.z == cap.y) nor = normalize(vec3(pt.x, pt.y,  1)); // near
 		else if (pt.z == cap.x) nor = normalize(vec3(pt.x, pt.y, -1)); // far
-		else nor = normalize(vec3(pt.x-cen.x, pt.y, pt.z));
+		else nor = normalize(vec3(pt.x, pt.y, 0));
 
-		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+		nor = (txi * vec4(nor, 0)).xyz; // convert to ray space
 		return vec4(t1, nor);
 	}
 }
