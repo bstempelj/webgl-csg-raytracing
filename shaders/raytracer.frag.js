@@ -92,8 +92,6 @@ mat4 rotationAxisAngle(vec3 v, float angle ) {
 vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
 	vec4 sph = texelFetch(u_spheres, ivec2(node, 0), 0);
 
-	invalidHit = false;
-
 	vec3 oc = ro - sph.xyz;
 	float a = dot(rd, rd);
 	float b = 2.0 * dot(oc, rd);
@@ -114,7 +112,6 @@ vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
 		}
 	}
 
-	invalidHit = true;
 	return INVALID_HIT;
 }
 
@@ -227,7 +224,7 @@ vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
 	// quadratic x^2 + y^2 = 0.5^2 => (ro.x + t*rd.x)^2 + (ro.y + t*rd.y)^2 = 0.5
 	float a = dot(rd.xy, rd.xy);
 	float b = dot(ro.xy, rd.xy);
-	float c = dot(ro.xy, ro.xy) - 0.5;
+	float c = dot(ro.xy, ro.xy) - 0.25;
 
 	float delta = b * b - a * c;
 	if (delta < 0.0) return INVALID_HIT;
@@ -508,39 +505,39 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					uvec4 geomNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
 					if (geomNodeLoc.x == uint(SPHERE)) {
 						isectL = iSphere(ro, rd, geomNodeLoc.y, TMIN, TMAX);
-						if (!invalidHit) {
+						if (isectL != INVALID_HIT) {
 							pushHit(isectL);
 							c++;
 						}
 
 						isectL_x = iSphere(ro, rd, geomNodeLoc.y, isectL.x, TMAX);
-						if (!invalidHit) {
+						if (isectL_x != INVALID_HIT) {
 							pushHit(isectL_x);
 							c++;
 						}
 					}
 					else if (geomNodeLoc.x == uint(BOX)) {
 						isectL = iBox(ro, rd, geomNodeLoc.y, false);
-						if (!invalidHit) {
+						if (isectL != INVALID_HIT) {
 							pushHit(isectL);
 							c++;
 						}
 
 						isectL_x = iBox(ro, rd, geomNodeLoc.y, true);
-						if (!invalidHit) {
+						if (isectL_x != INVALID_HIT) {
 							pushHit(isectL_x);
 							c++;
 						}
 					}
 					else if (geomNodeLoc.x == uint(CYLINDER)) {
 						isectL = iCylinder(ro, rd, geomNodeLoc.y, false);
-						if (!invalidHit) {
+						if (isectL != INVALID_HIT) {
 							pushHit(isectL);
 							c++;
 						}
 
 						isectL_x = iCylinder(ro, rd, geomNodeLoc.y, true);
-						if (!invalidHit) {
+						if (isectL_x != INVALID_HIT) {
 							pushHit(isectL_x);
 							c++;
 						}

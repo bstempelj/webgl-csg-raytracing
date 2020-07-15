@@ -17,31 +17,35 @@ const BOX      = 0x0011;
 const CYLINDER = 0x0012;
 
 
-export const complexScene = {
+export const boxSphCyl3Scene = {
 	tree: [
-		// OP,INTER,
-		// BOX,0, SPHERE,0,
-
-		// OP,UNION,
-		// CYLINDER,0, CYLINDER,2
-
 		OP,SUBTR,
 		OP,INTER, OP,UNION,
-		BOX,0, SPHERE,0, CYLINDER,0, CYLINDER,1
+		BOX,0, SPHERE,0, CYLINDER,0, OP,UNION,
+		NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, CYLINDER,1, CYLINDER,2
 	],
-	spheres: [0,0,0,0.6],
-	boxes: [0,0,0,0, 0.5,0.5,0.5,0, 0,0,0,0], // origin, size, rotation
-	cylinders: [
-		0,90,0,0, 90,0,0,0,
+	boxes: [0,0,0,0, 0.75,0.75,0.75,0, 0,0,0,0],
+	spheres: [0,0,0,1.2],
+	cylinders: [0,90,0,0, 90,0,0,0, 0,0,90,0],
+};
+
+export const boxCyl3Scene = {
+	tree: [
+		OP,SUBTR,
+		BOX,0, OP,UNION,
+		NIL,NIL, NIL,NIL, CYLINDER,0, OP,UNION,
+		NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, NIL,NIL, CYLINDER,1, CYLINDER,2
 	],
+	boxes: [0,0,0,0, 0.75,0.75,0.75,0, 0,0,0,0],
+	cylinders: [0,90,0,0, 90,0,0,0, 0,0,90,0],
 };
 
 export const cylBoxScene = {
 	tree: [
-		OP,UNION,
+		OP,SUBTR,
 		BOX,0, CYLINDER,0,
 	],
-	boxes: [0,0,0,0, 0.5,0.5,0.5,0, 0,0,0,0], // origin, size, rotation
+	boxes: [0,0,0,0, 0.75,0.75,0.75,0, 0,0,0,0], // origin, size, rotation
 	cylinders: [
 		0,90,0,0
 	],
@@ -49,12 +53,12 @@ export const cylBoxScene = {
 
 export const cylSphScene = {
 	tree: [
-		OP,UNION,
-		BOX,0, SPHERE,0,
+		OP,SUBTR,
+		CYLINDER,0, SPHERE,0,
 	],
-	spheres: [0,0,0,1],
+	spheres: [0,0,0,1.2],
 	cylinders: [
-		0,0,0,0
+		0,90,0,0
 	],
 };
 
