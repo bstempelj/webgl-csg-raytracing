@@ -1,0 +1,8 @@
+- cylinder size should be specified in the scene (now it is fixed in code)
+- box intersection could be faster and not use the swap function (see scratchapixel)
+- normals on the cap of cylinders are wrong
+- the csg algorithm uses 5 stacks which is too much
+- implement BVH
+- geometry intersection code could be split up into another file
+- find a way to avoid all the NILs in the scene CSG tree definition (now they're
+necessary to specify which child belong to what parent)
