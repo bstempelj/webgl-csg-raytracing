@@ -60,7 +60,6 @@ function resize() {
 const canvas  = document.getElementById('glcanvas');
 canvas.width  = (DEV) ? 400 : document.body.clientWidth;
 canvas.height = (DEV) ? 300 : document.body.clientHeight;
-console.log(canvas.width, canvas.height);
 const gl = canvas.getContext('webgl2');
 
 if (!DEV) window.addEventListener('resize', resize);
@@ -94,7 +93,6 @@ function drawScene() {
 	const spheres   = createTexture(gl, 1, new Float32Array(scene.spheres));
 	const boxes     = createTexture(gl, 2, new Float32Array(scene.boxes));
 	const cylinders = createTexture(gl, 3, new Float32Array(scene.cylinders));
-
 	setViewport(gl, gl.canvas.clientWidth, gl.canvas.clientHeight);
 	bindAttribute(gl, screenBuffer, screenAttr, 2);
 	gl.useProgram(program);

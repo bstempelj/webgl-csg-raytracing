@@ -4,10 +4,14 @@ precision highp float;
 ////////////////////////////////////////////////////////////////////////////////
 // DEFINES
 #define NORMALS
-#define STACKOVERFLOW 1000
+#define STACKOVERFLOW 10000
 #define TMIN -100.0
 #define TMAX 100.0
-#define STACK_SIZE 15
+#define STACK_SIZE 30
+#define TREE_HEIGHT 3
+#define NUM_OF_OBJECTS 5
+#define TIME_STACK_SIZE 4 
+// ceil(NUM_OF_OBJECTS/2) + 1
 
 #define INVALID_HIT vec4(-1,0,0,0)
 
@@ -61,11 +65,8 @@ int  hitHead2   = -1;
 int  hitHead3   = -1;
 int  timeHead   = -1;
 bool invalidHit = false;
-int  stateStack[STACK_SIZE];
-vec4 hitStack[STACK_SIZE];
-vec4 hitStack2[STACK_SIZE];
-vec4 hitStack3[STACK_SIZE];
-int timeStack[STACK_SIZE];
+int  stateStack[TREE_HEIGHT];
+int  timeStack[TIME_STACK_SIZE];
 
 ////////////////////////////////////////////////////////////////////////////////
 // MATH FUNCTIONS
@@ -89,8 +90,11 @@ mat4 rotationAxisAngle(vec3 v, float angle ) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERSECTION FUNCTIONS
-vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
+void iSphere(vec3 ro, vec3 rd, uint node, out vec4 tenter, out vec4 texit) {
 	vec4 sph = texelFetch(u_spheres, ivec2(node, 0), 0);
+
+    tenter = INVALID_HIT;
+    texit = INVALID_HIT;
 
 	vec3 oc = ro - sph.xyz;
 	float a = dot(rd, rd);
@@ -98,21 +102,27 @@ vec4 iSphere(vec3 ro, vec3 rd, uint node, float tmin, float tmax) {
 	float c = dot(oc, oc) - sph.w*sph.w;
 	float disc = b*b - 4.0*c;
 	if (disc > 0.0) {
-		float t = (-b - sqrt(disc)) / (2.0*a);
-		if (t > tmin && t < tmax) {
-			vec3 pos = ro + t*rd;
-			vec3 nor = normalize(pos-sph.xyz);
-			return vec4(t, nor);
-		}
-		t = (-b + sqrt(disc)) / (2.0*a);
-		if (t > tmin && t < tmax) {
-			vec3 pos = ro + t*rd;
-			vec3 nor = normalize(pos-sph.xyz);
-			return vec4(t, nor);
-		}
+		float t0 = (-b - sqrt(disc)) / (2.0*a);
+        float t1 = (-b + sqrt(disc)) / (2.0*a);
+
+        vec3 pos0 = ro + t0*rd;
+        vec3 nor0 = normalize(pos0-sph.xyz);
+        vec3 pos1 = ro + t1*rd;
+        vec3 nor1 = normalize(pos1-sph.xyz);
+
+        if(t0 < t1)
+        {
+            tenter = vec4(t0, nor0);
+            texit = vec4(t1, nor1);
+        }
+        else
+        {
+            tenter = vec4(t1, nor1);
+            texit = vec4(t0, nor0);
+        }
 	}
 
-	return INVALID_HIT;
+	//return INVALID_HIT;
 }
 
 // https://blog.johnnovak.net/2016/10/22/the-nim-raytracer-project-part-4-calculating-box-normals/
@@ -135,10 +145,13 @@ void swap(inout float tmin, inout float tmax) {
 	tmax = temp;
 }
 
-vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
+void iBox(vec3 ro, vec3 rd, uint node, out vec4 tenter, out vec4 texit) {
 	vec4 boxOrigin   = texelFetch(u_boxes, ivec2(node,    0), 0);
 	vec4 boxSize     = texelFetch(u_boxes, ivec2(node+1u, 0), 0);
 	vec4 boxRotation = texelFetch(u_boxes, ivec2(node+2u, 0), 0);
+
+    tenter = INVALID_HIT;
+    texit = INVALID_HIT;
 
 	vec3 bmin = (boxOrigin - boxSize).xyz;
 	vec3 bmax = (boxOrigin + boxSize).xyz;
@@ -165,7 +178,7 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	if (tymin > tymax) swap(tymin, tymax); 
  
 	if ((tmin > tymax) || (tymin > tmax)) 
-		return INVALID_HIT; 
+		return; //INVALID_HIT; 
  
 	if (tymin > tmin) 
 		tmin = tymin; 
@@ -179,14 +192,24 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 	if (tzmin > tzmax) swap(tzmin, tzmax); 
  
 	if ((tmin > tzmax) || (tzmin > tmax)) 
-		return INVALID_HIT; 
+		return;// INVALID_HIT; 
  
 	if (tzmin > tmin) 
 		tmin = tzmin; 
  
 	if (tzmax < tmax) 
 		tmax = tzmax; 
- 
+
+    vec3 hit = (ro + tmin*rd);
+    vec3 nor = nBox(ro, rd, hit, bmin, bmax);
+    nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+    tenter = vec4(tmin, nor);
+
+    hit = (ro + tmax*rd);
+    nor = nBox(ro, rd, hit, bmin, bmax);
+    nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
+    texit = vec4(tmax, nor);
+ /*
 	if (!far) {
 		vec3 hit = (ro + tmin*rd);
 		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
@@ -197,11 +220,14 @@ vec4 iBox(vec3 ro, vec3 rd, uint node, bool far) {
 		vec3 nor = nBox(ro, rd, hit, bmin, bmax);
 		nor = (txi * vec4(nor,0.0)).xyz; // convert to ray space
 		return vec4(tmax, nor);
-	}
+	}*/
 }
 
-vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
+void iCylinder(vec3 ro, vec3 rd, uint node, out vec4 tenter, out vec4 texit) {
 	vec4 cylRotation = texelFetch(u_cylinders, ivec2(node, 0), 0);
+
+    tenter = INVALID_HIT;
+    texit = INVALID_HIT;
 
 	mat4 rotx = rotationAxisAngle(normalize(vec3(1.0,0.0,0.0)), cylRotation.x * (M_PI/180.0));
 	mat4 roty = rotationAxisAngle(normalize(vec3(0.0,1.0,0.0)), cylRotation.y * (M_PI/180.0));
@@ -227,7 +253,7 @@ vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
 	float c = dot(ro.xy, ro.xy) - 0.25;
 
 	float delta = b * b - a * c;
-	if (delta < 0.0) return INVALID_HIT;
+	if (delta < 0.0) return;// INVALID_HIT;
 
 	// 2 roots
 	float deltasqrt = sqrt(delta);
@@ -257,26 +283,26 @@ vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
 	else if (zfar > zcap.x)
 		t1 = cap.x;
     
-    if (!(t1 > 0.0 && t1 > t0)) return INVALID_HIT;
+    if (!(t1 > 0.0 && t1 > t0)) return;// INVALID_HIT;
 
     vec3 nor;
-    if (!far) {
-    	vec3 pt = ro + t0*rd;
-    	if (pt.z == cap.y) nor = normalize(vec3(0, 0,  1)); // near
-    	else if (pt.z == cap.x) nor = normalize(vec3(0, 0, -1)); // far
-    	else nor = normalize(vec3(pt.x, pt.y, 0));
 
-    	nor = (txi * vec4(nor, 0)).xyz; // convert to ray space
-    	return vec4(t0, nor);
-	} else {
-		vec3 pt = ro + t1*rd;
-		if (pt.z == cap.y) nor = normalize(vec3(pt.x, pt.y,  1)); // near
-		else if (pt.z == cap.x) nor = normalize(vec3(pt.x, pt.y, -1)); // far
-		else nor = normalize(vec3(pt.x, pt.y, 0));
+	vec3 pt = ro + t0*rd;
+	if (pt.z == cap.y) nor = normalize(vec3(0, 0,  1)); // near
+	else if (pt.z == cap.x) nor = normalize(vec3(0, 0, -1)); // far
+	else nor = normalize(vec3(pt.x, pt.y, 0));
 
-		nor = (txi * vec4(nor, 0)).xyz; // convert to ray space
-		return vec4(t1, nor);
-	}
+	nor = (txi * vec4(nor, 0)).xyz; // convert to ray space
+	tenter = vec4(t0, nor);
+
+	pt = ro + t1*rd;
+	if (pt.z == cap.y) nor = normalize(vec3(pt.x, pt.y,  1)); // near
+	else if (pt.z == cap.x) nor = normalize(vec3(pt.x, pt.y, -1)); // far
+	else nor = normalize(vec3(pt.x, pt.y, 0));
+
+	nor = (txi * vec4(nor, 0)).xyz; // convert to ray space
+	texit = vec4(t1, nor);
+	
 }
 
 
@@ -284,14 +310,14 @@ vec4 iCylinder(vec3 ro, vec3 rd, uint node, bool far) {
 // HELPER FUNCTIONS
 // stack push helpers
 void pushState(int state) { stateStack[++stateHead] = state; }
-void pushHit(vec4 isect)  { hitStack[++hitHead]     = isect; }
-void pushHit2(vec4 isect) { hitStack2[++hitHead2] = isect;   }
+//void pushHit(vec4 isect)  { hitStack[++hitHead]     = isect; }
+//void pushHit2(vec4 isect) { hitStack2[++hitHead2] = isect;   }
 void pushTime(int t)      { timeStack[++timeHead]   = t;     }
 
 // stack pop helpers
 int  popState() { return stateStack[stateHead--]; }
-vec4 popHit()   { return hitStack[hitHead--];     }
-vec4 popHit2()  { return hitStack2[hitHead2--];   }
+//vec4 popHit()   { return hitStack[hitHead--];     }
+//vec4 popHit2()  { return hitStack2[hitHead2--];   }
 int  popTime()  { return timeStack[timeHead--];   }
 
 // node access helpers
@@ -313,65 +339,140 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 	vec4 isectL, isectR;     // enter intersection
 	vec4 isectL_x, isectR_x; // exit intersection
+    vec4 hitStack[STACK_SIZE];
+
+#define STACK_LEFT_ENTER  hitStack[hitHead - hitNumRight - hitNumLeft + x + 1]
+#define STACK_LEFT_EXIT   hitStack[hitHead - hitNumRight - hitNumLeft + x + 2]
+#define STACK_RIGHT_ENTER hitStack[hitHead - hitNumRight + y + 1]
+#define STACK_RIGHT_EXIT  hitStack[hitHead - hitNumRight + y + 2]
 
 	int i = 0; // for debugging
 	for (bool toContinue = true; toContinue; i++) {
 		if (state == DONE) {
 			int op = int(texelFetch(u_csgtree, ivec2(node, 0), 0).y);
 
-			if (op == UNION) {
-				// merge results from left and right branch
-				pushTime(popTime() + popTime());
+			if (op == UNION) 
+            {
+				// merge results from left and right branch,
+                
+                // pleb union
+                pushTime(popTime() + popTime());
+
+                // super union
+                /*
+                if(){
+                    // exit if there's not enough information in the stack
+                    if (timeHead+1 < 2 || timeHead+1 % 2 == 1) return INVALID_HIT;
+                                    
+                    int hitNumRight = popTime(); // right was stored last in stack so pop that first
+                    int hitNumLeft = popTime();
+
+                    // exit if not even number of hits
+                    if (hitNumLeft % 2 == 1) return INVALID_HIT;
+                    if (hitNumRight % 2 == 1) return INVALID_HIT;
+
+                    int keepCount = 0;
+                    int oldDropCount = 0;
+                    int dropCount = 0;
+
+                    for (int x = 0; x < hitNumLeft && ((hitNumRight - oldDropCount) > 0); x += 2)
+                    {
+                        isectL = STACK_LEFT_ENTER;            // get enter from left branch
+                        isectL_x = STACK_LEFT_EXIT;           // get exit  from left branch
+                        keepCount = 0;
+                        oldDropCount = dropCount;
+
+                        for (int y = 0; y < hitNumRight - oldDropCount; y += 2) 
+                        {
+                            isectR = STACK_RIGHT_ENTER;      // get enter from right branch
+                            isectR_x = STACK_RIGHT_EXIT;     // get exit  from right branch
+
+                            if( (isectR.x   > isectL.x && isectR.x   < isectL_x.x)   ||
+                                (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x)   ||
+                                (isectR.x   < isectL.x && isectR_x.x > isectL_x.x)   ||
+                                (isectR.x   > isectL.x && isectR_x.x < isectL_x.x))
+                            {
+                                if(isectR.x < isectL.x)
+                                    isectL = isectR;
+                                if(isectR_x.x > isectL_x.x)
+                                    isectL_x = isectR_x;
+
+                                STACK_LEFT_ENTER = isectL;
+                                STACK_LEFT_EXIT = isectL_x;
+
+                                dropCount += 2;
+                            }
+                            else
+                            {
+                                hitStack[hitHead - hitNumRight + keepCount + 1] = isectR;
+                                hitStack[hitHead - hitNumRight + keepCount + 2] = isectR_x;
+                                keepCount += 2;
+                            }
+                        }
+                    }
+                    hitHead = hitHead - dropCount;
+                    pushTime(hitNumLeft + (hitNumRight - dropCount));
+                }
+                */
 			}
 			else if (op == INTER) {
-				// exit if there's not enough information in the stack
-				if (timeHead+1 < 2 || timeHead+1 % 2 == 1) return INVALID_HIT;
+                // exit if there's not enough information in the stack
+                if (timeHead+1 < 2 || timeHead+1 % 2 == 1) return INVALID_HIT;
+                                
+                int hitNumRight = popTime(); // right was stored last in stack so pop that first
+                int hitNumLeft = popTime();
 
-				// get left and right branch results
-				int hitNumRight = popTime(); // right was stored last in stack so pop that first
-				int hitNumLeft = popTime();
+                // exit if not even number of hits
+                if (hitNumLeft % 2 == 1) return INVALID_HIT;
+                if (hitNumRight % 2 == 1) return INVALID_HIT;
 
-				// exit if not even number of hits
-				if (hitNumLeft % 2 == 1) return INVALID_HIT;
-				if (hitNumRight % 2 == 1) return INVALID_HIT;
+                int keepCount = 0;
+                int oldDropCount = 0;
+                int dropCount = 0;
 
-				if (hitNumLeft == 0 || hitNumRight == 0) {
-					hitHead = hitHead - (hitNumLeft + hitNumRight); // move hit stack counter to "remove" both left and right hits
-				}
-				else {
-					// enter hit is always followed by exit hit of the same object or same part of an object
+                if (hitNumLeft == 0 || hitNumRight == 0) {
+                    hitHead = hitHead - (hitNumLeft + hitNumRight); // move hit stack counter to "remove" both left and right hits
+                    pushTime(0);
+                }
+                else 
+                {
+                    // enter hit is always followed by exit hit of the same object or same part of an object
 					int storeCount = 0;
 					hitHead2 = -1; // reset second stack
+                    vec4 hitStack2[STACK_SIZE];
 
 					for (int x = 0; x < hitNumLeft; x += 2) {
-						isectL = hitStack[hitHead - hitNumRight - hitNumLeft + 1 + x];			// get enter from left branch
-						isectL_x = hitStack[hitHead - hitNumRight - hitNumLeft + 1 + x + 1];	// get exit  from left branch
+						isectL = STACK_LEFT_ENTER;			// get enter from left branch
+						isectL_x = STACK_LEFT_EXIT;	        // get exit  from left branch
 
 						for (int y = 0; y < hitNumRight; y += 2) {
-							isectR = hitStack[hitHead - hitNumRight + 1 + y];	// get enter from right branch
-							isectR_x = hitStack[hitHead - hitNumRight + 1 + y + 1]; // get exit  from right branch
+							isectR = STACK_RIGHT_ENTER;	   // get enter from right branch
+							isectR_x = STACK_RIGHT_EXIT;     // get exit  from right branch
 
-							if (isectR.x > isectL.x && isectR.x < isectL_x.x) { // if right enter is inside left object
+							if (isectR.x > isectL.x && isectR.x < isectL_x.x) // if right enter is inside left object
+                            { 
 								// if right enter and exit are inside left object, then save both right points
-								if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x)  pushHit2(isectR_x);
-								else pushHit2(isectL_x); // save left exit
+								if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) 
+                                    hitStack2[++hitHead2] = isectR_x;
+								else 
+                                    hitStack2[++hitHead2] = isectL_x;// save left exit
 
-								pushHit2(isectR); // save right enter
+								hitStack2[++hitHead2] = isectR; //pushHit2(isectR); // save right enter
 								storeCount += 2;
 							}
 							else if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right exit is inside left object
-								pushHit2(isectR_x); // save right exit
-								pushHit2(isectL);	// save left enter
+								hitStack2[++hitHead2] = isectR_x;//pushHit2(isectR_x); // save right exit
+								hitStack2[++hitHead2] = isectL;//pushHit2(isectL);	// save left enter
 								storeCount += 2;
 							}
 							else if (isectL.x > isectR.x && isectL_x.x < isectR_x.x) { // if left object is completly inside right object
-								pushHit2(isectL_x);
-								pushHit2(isectL); // save left enter and exit
+								hitStack2[++hitHead2] = isectL_x;//pushHit2(isectL_x);
+								hitStack2[++hitHead2] = isectL;//pushHit2(isectL); // save left enter and exit
 								storeCount += 2;
 							}
 							else if ((isectL.x == isectR.x) && (isectL_x.x == isectR_x.x)) {// edge case - if both object same size and same position, then just grab left object
-								pushHit2(isectL_x);
-								pushHit2(isectL); // save left enter and exit
+								hitStack2[++hitHead2] = isectL_x;//pushHit2(isectL_x);
+								hitStack2[++hitHead2] = isectL;//pushHit2(isectL); // save left enter and exit
 								storeCount += 2;
 							}
 						}
@@ -380,7 +481,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					hitHead = hitHead - (hitNumLeft + hitNumRight); // move hit stack counter to "remove" both left and right hits
 
 					// transfer only stored hits back to hit stack
-					for (int x = 0; x < storeCount; x++) pushHit(popHit2());
+					for (int x = 0; x < storeCount; x++) 
+                        hitStack[++hitHead] = hitStack2[hitHead2--];//popHit2());
 					pushTime(storeCount); // having no hits on branch is also an information we need, because operations always pop 2 'time' results
 				}
 			}
@@ -396,13 +498,17 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 				if (hitNumLeft % 2 == 1) return INVALID_HIT;
 				if (hitNumRight % 2 == 1) return INVALID_HIT;
 
-				if (hitNumLeft == 0) hitHead = hitHead - (hitNumLeft + hitNumRight); // move hit stack counter to "remove" both left and right hits
-				else if (hitNumRight == 0) pushTime(hitNumLeft);
+				if (hitNumLeft == 0) 
+                    hitHead = hitHead - (hitNumLeft + hitNumRight); // move hit stack counter to "remove" both left and right hits
+				else if (hitNumRight == 0) 
+                    pushTime(hitNumLeft);
 				else {
 					// enter hit is always followed by exit hit of the same object or same part of an object
 					int storeCount = 0;
 					hitHead2 = -1; // reset second stack
+                    vec4 hitStack2[STACK_SIZE];
 					int extraOnSecond = 0;
+                    vec4 hitStack3[STACK_SIZE];
 
 					for (int x = 0; x < hitNumLeft; x += 2) {
 						isectL = hitStack[hitHead - hitNumRight - hitNumLeft + 1 + x];			// get enter from left branch
@@ -424,46 +530,46 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 								if (isectR.x > isectL.x && isectR.x < isectL_x.x) { // if right enter is inside left object
 									if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right enter and exit are inside left object
-										pushHit2(isectL_x); // save left exit as exit
+										hitStack2[++hitHead2] = isectL_x;//pushHit2(isectL_x); // save left exit as exit
 										isectR_x.y *= -1.0;
 										isectR_x.z *= -1.0;
 										isectR_x.w *= -1.0;
-										pushHit2(isectR_x); // save right exit as enter
+										hitStack2[++hitHead2] = isectR_x;//pushHit2(isectR_x); // save right exit as enter
 										extraOnSecond += 2;
 									}
 
 									isectR.y *= -1.0;
 									isectR.z *= -1.0;
 									isectR.w *= -1.0;
-									pushHit2(isectR); // save right enter as exit
-									pushHit2(isectL); // save left enter as enter
+									hitStack2[++hitHead2] = isectR;//pushHit2(isectR); // save right enter as exit
+									hitStack2[++hitHead2] = isectL;//pushHit2(isectL); // save left enter as enter
 
 									extraOnSecond += 2;
 								}
 								else if (isectR_x.x > isectL.x && isectR_x.x < isectL_x.x) { // if right exit is inside left object
-									pushHit2(isectL_x); // save left exit as exit
+									hitStack2[++hitHead2] = isectL_x;//pushHit2(isectL_x); // save left exit as exit
 									isectR_x.y *= -1.0;
 									isectR_x.z *= -1.0;
 									isectR_x.w *= -1.0;
-									pushHit2(isectR_x);// save right exit as enter
+									hitStack2[++hitHead2] = isectR_x;//pushHit2(isectR_x);// save right exit as enter
 
 									extraOnSecond += 2;
 								}
 								else if ((isectL.x < isectR.x && isectL_x.x < isectR_x.x) || (isectL.x > isectR.x && isectL_x.x > isectR_x.x)) { // if right is nowhere near left
-									pushHit2(isectL_x); // save both left points as they were
-									pushHit2(isectL);
+									hitStack2[++hitHead2] = isectL_x;//pushHit2(isectL_x); // save both left points as they were
+									hitStack2[++hitHead2] = isectL;//pushHit2(isectL);
 									extraOnSecond += 2;
 								}
 								//else if left object is completly inside right object or if objects are the same size and on the same position, then save none
 							}
 
-							for (int z = 0; z < extraOnSecond; z++) hitStack3[z] = popHit2();
+							for (int z = 0; z < extraOnSecond; z++) hitStack3[z] = hitStack2[hitHead2--];//popHit2();
 							hitHead3 = extraOnSecond - 1;
 							extraOnSecond = 0;
 						}
 
 						hitHead2 -= extraOnSecond;
-						for (int z = hitHead3; z >= 0; z--) pushHit2(hitStack3[z]);
+						for (int z = hitHead3; z >= 0; z--) hitStack2[++hitHead2] = hitStack3[z];//pushHit2(hitStack3[z]);
 						storeCount += hitHead3 + 1;
 						hitHead3 = -1;
 						extraOnSecond = 0;
@@ -472,7 +578,8 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					hitHead = hitHead - (hitNumLeft + hitNumRight); // move hit stack counter to "remove" both left and right hits
 
 					// transfer only stored hits back to hit stack
-					for (int x = 0; x < storeCount; x++) pushHit(popHit2());
+					for (int x = 0; x < storeCount; x++) 
+                        hitStack[++hitHead] = hitStack2[hitHead2--];//popHit2());
 					pushTime(storeCount);	// having no hits on branch is also an information we need, because operations always pop 2 'time' results
 				}
 			}
@@ -490,9 +597,21 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 					node = left(node);
 				}
 				else if (state == DORIGHT) {
-					pushState(DONE);
-					node = right(node);
-					state = DOBOTH;
+
+                    // if left tree gave no results and node operation isn't union
+                    if(timeStack[timeHead] == 0 && int(texelFetch(u_csgtree, ivec2(node, 0), 0).y) != UNION)
+                    {
+                        //ignore right tree
+                        pushTime(0);
+                        state = DONE;
+                    }
+                    else
+                    {
+                        // otherwise traverse right tree
+    					pushState(DONE);
+    					node = right(node);
+    					state = DOBOTH;
+                    }
 				}
 				else {
 					return PURPLE; // exception
@@ -504,46 +623,49 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 
 					uvec4 geomNodeLoc = texelFetch(u_csgtree, ivec2(node, 0), 0);
 					if (geomNodeLoc.x == uint(SPHERE)) {
-						isectL = iSphere(ro, rd, geomNodeLoc.y, TMIN, TMAX);
+                        iSphere(ro, rd, geomNodeLoc.y, isectL, isectL_x);
+						//isectL = iSphere(ro, rd, geomNodeLoc.y, TMIN, TMAX);
 						if (isectL != INVALID_HIT) {
-							pushHit(isectL);
+							hitStack[++hitHead] = isectL;
 							c++;
 						}
 
-						isectL_x = iSphere(ro, rd, geomNodeLoc.y, isectL.x, TMAX);
+						//isectL_x = iSphere(ro, rd, geomNodeLoc.y, isectL.x, TMAX);
 						if (isectL_x != INVALID_HIT) {
-							pushHit(isectL_x);
+							hitStack[++hitHead] = isectL_x;
 							c++;
 						}
 					}
 					else if (geomNodeLoc.x == uint(BOX)) {
-						isectL = iBox(ro, rd, geomNodeLoc.y, false);
+                        iBox(ro, rd, geomNodeLoc.y, isectL, isectL_x);
+						//isectL = iBox(ro, rd, geomNodeLoc.y, false);
 						if (isectL != INVALID_HIT) {
-							pushHit(isectL);
+							hitStack[++hitHead] = isectL;
 							c++;
 						}
 
-						isectL_x = iBox(ro, rd, geomNodeLoc.y, true);
+						//isectL_x = iBox(ro, rd, geomNodeLoc.y, true);
 						if (isectL_x != INVALID_HIT) {
-							pushHit(isectL_x);
+							hitStack[++hitHead] = isectL_x;
 							c++;
 						}
 					}
 					else if (geomNodeLoc.x == uint(CYLINDER)) {
-						isectL = iCylinder(ro, rd, geomNodeLoc.y, false);
+                        iCylinder(ro, rd, geomNodeLoc.y, isectL, isectL_x);
+						//isectL = iCylinder(ro, rd, geomNodeLoc.y, false);
 						if (isectL != INVALID_HIT) {
-							pushHit(isectL);
+							hitStack[++hitHead] = isectL;
 							c++;
 						}
 
-						isectL_x = iCylinder(ro, rd, geomNodeLoc.y, true);
+						//isectL_x = iCylinder(ro, rd, geomNodeLoc.y, true);
 						if (isectL_x != INVALID_HIT) {
-							pushHit(isectL_x);
+							hitStack[++hitHead] = isectL_x;
 							c++;
 						}
 					}
 
-					pushTime(c);
+                    pushTime(c);
 				}
 				else { // DORIGHT
 					return PURPLE; // exception
@@ -560,9 +682,9 @@ vec4 sceneNearestHit(vec3 ro, vec3 rd) {
 	if (timeHead >= 0) {
 		pointCount = popTime();
 		if (pointCount > 0) {
-			isectL = popHit();
+			isectL = hitStack[hitHead--];
 			for (int i = 1; i < pointCount; i++) {
-				isectR = popHit();
+				isectR = hitStack[hitHead--];
 				if ((isectR.x < isectL.x && isectR.x >= 0.0) || isectL.x < 0.0)
 					isectL = isectR;
 			}
