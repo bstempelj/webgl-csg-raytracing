@@ -1,7 +1,5 @@
 # WebGL CSG Raytracing
 
-*It's still a work in progress...*
-
 ![](howitlooks.png)
 
 ## How to run it?
